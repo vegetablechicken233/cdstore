@@ -1,4 +1,4 @@
-CC = g++
+CC = g++ -no-pie -fno-pie -fPIC
 CFLAGS = -O3 -Wall -fno-operator-names
 LIBS = -lcrypto -lssl -lpthread 
 INCLUDES =-I./lib/cryptopp -I./comm -I./coding -I./chunking -I./utils

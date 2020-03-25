@@ -1,0 +1,2 @@
+g++ -O3 -Wall -fno-operator-names -I./lib/cryptopp -I./comm -I./coding -I./chunking -I./utils -c utils/CryptoPrimitive.cc -o utils/CryptoPrimitive.o
+Makefile:10: recipe for target 'utils/CryptoPrimitive.o' failed
