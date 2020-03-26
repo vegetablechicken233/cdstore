@@ -16,25 +16,25 @@ void* Encoder::thread_handler(void* param){
 
     /* parse parameters */
     int index = ((param_encoder*)param)->index;
-    Encoder* obj = ((param_encoder*)param)->obj;
+    Encoder* obj = ((param_encoder*)param)->obj;//初始化 index为开头 传递指针
     free(param);
 
     /* main loop for getting secrets and encode them into shares*/
-    while(true){
+    while(true){//线程的主要循环
 
         /* get an object from input buffer */
         Secret_Item_t temp;
         ShareChunk_Item_t input;
-        obj->inputbuffer_[index]->Extract(&temp);
+        obj->inputbuffer_[index]->Extract(&temp);//从ADD函数中提取出当前循环buffer中的secret_item放到temp中（即那些小的chunks）
 
         /* get the object type */
-        int type = temp.type;
+        int type = temp.type;//读取是否为头文件
         input.type = type;
 
         /* copy content into input object */
         if(type == FILE_OBJECT){
             /* if it's file header */
-            memcpy(&input.file_header, &temp.file_header, sizeof(fileHead_t));
+            memcpy(&input.file_header, &temp.file_header, sizeof(fileHead_t));//如果是则将头文件大小的数据copy到sharechunk_item input中 即不变
         }else{
 
             /* if it's share object */
@@ -139,7 +139,7 @@ void* Encoder::collect(void* param){
  * see if it's end of encoding file
  *
  */
-void Encoder::indicateEnd(){
+void Encoder::indicateEnd(){//在chunk全部输入完之后维持encode和上传的子线程不被销毁
     pthread_join(tid_[NUM_THREADS],NULL);
 }
 
@@ -165,14 +165,14 @@ Encoder::Encoder(int type, int n, int m, int r, int securetype, Uploader* upload
     outputbuffer_ = (RingBuffer<ShareChunk_Item_t>**)malloc(sizeof(RingBuffer<ShareChunk_Item_t>*)*NUM_THREADS);
 
     /* initialization of objects */
-    for (i = 0; i < NUM_THREADS; i++){
+    for (i = 0; i < NUM_THREADS; i++){//以i为循环NUM_THEARDS个线程 从0到NUM-1
         inputbuffer_[i] = new RingBuffer<Secret_Item_t>(RB_SIZE, true, 1);
         outputbuffer_[i] = new RingBuffer<ShareChunk_Item_t>(RB_SIZE, true, 1);
-        cryptoObj_[i] = new CryptoPrimitive(securetype);
-        encodeObj_[i] = new CDCodec(type,n,m,r, cryptoObj_[i]);
-        param_encoder* temp = (param_encoder*)malloc(sizeof(param_encoder));
+        cryptoObj_[i] = new CryptoPrimitive(securetype);//加密模块生成
+        encodeObj_[i] = new CDCodec(type,n,m,r, cryptoObj_[i]);//编码模块
+        param_encoder* temp = (param_encoder*)malloc(sizeof(param_encoder));//
         temp->index = i;
-        temp->obj = this;
+        temp->obj = this;//用于在
 
         /* create encoding threads */
         pthread_create(&tid_[i],0,&thread_handler,(void*)temp);
@@ -181,7 +181,7 @@ Encoder::Encoder(int type, int n, int m, int r, int securetype, Uploader* upload
     uploadObj_ = uploaderObj;
 
     /* create collect thread */
-    pthread_create(&tid_[NUM_THREADS],0,&collect,(void*)this);
+    pthread_create(&tid_[NUM_THREADS],0,&collect,(void*)this);//只开了一个序列号为NUM_THERADS的线程
 }
 
 /*
@@ -208,7 +208,7 @@ Encoder::~Encoder(){
  */
 int Encoder::add(Secret_Item_t* item){
     /* add item */
-    inputbuffer_[nextAddIndex_]->Insert(item, sizeof(Secret_Item_t));
+    inputbuffer_[nextAddIndex_]->Insert(item, sizeof(Secret_Item_t));//向循环buffer区中添加新部分供线程使用
 
     /* increment the index */
     nextAddIndex_ = (nextAddIndex_+1)%NUM_THREADS;
