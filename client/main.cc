@@ -107,11 +107,12 @@ int main(int argc, char *argv[]){
         long size = ftell(fin);	
         fseek(fin,0,SEEK_SET);
         uploaderObj = new Uploader(n,n,userID);
-        encoderObj = new Encoder(CAONT_RS_TYPE, n, m, r, securetype, uploaderObj);
+        encoderObj = new Encoder(CAONT_RS_TYPE, n, m, r, securetype, uploaderObj);//此处已经开始运行两个线程 分别是encode和upload
         chunkerObj = new Chunker(VAR_SIZE_TYPE);
         //chunking
         //
-        Encoder::Secret_Item_t header;//生成secret头
+        Encoder::Secret_Item_t header;//生成secret头 一个文件只有一个 header 此处作为union中的header使用 保存整个文件的概述
+        //data中是文件名 namesize中是文件名所占空间数 size是文件所占空间数
         header.type = 1;
         memcpy(header.file_header.data, argv[1], namesize);
         header.file_header.fullNameSize = namesize;
@@ -125,26 +126,26 @@ int main(int argc, char *argv[]){
         long total = 0;
         int totalChunks = 0;
         while (total < size){
-            int ret = fread(buffer,1,bufferSize,fin);//由文件读取buffersize字节数的字节 保存到buffer中 返回ret为读取的字节数
+            int ret = fread(buffer,1,bufferSize,fin);//由文件读取buffersize字节数的字节 保存到buffer中 返回ret为读取的字节数 
             chunkerObj->chunking(buffer,ret,chunkEndIndexList,&numOfChunks);//将ret大小的 buffer切割为 numofchunks 个chunk （大小在chunker.hh）并把尾部索引放到chunkENDindexlist
 
             int count = 0;
-            int preEnd = -1;//以上为切割为固定大小的buffer
+            int preEnd = -1;
             while(count < numOfChunks){
                 Encoder::Secret_Item_t input;
                 input.type = 0;
-                input.secret.secretID = totalChunks;
-                input.secret.secretSize = chunkEndIndexList[count] - preEnd;//将输入的chunks每一次循环的信息载入input这个item
-                memcpy(input.secret.data, buffer+preEnd+1, input.secret.secretSize);//将buffer按当前chunk读取到secretdata中
+                input.secret.secretID = totalChunks;//ID表示是第几个chunk，初始为0
+                input.secret.secretSize = chunkEndIndexList[count] - preEnd;//计算出当前块的大小
+                memcpy(input.secret.data, buffer+preEnd+1, input.secret.secretSize);//将buffer按从buffer+preEnd+1开始读一个chunk大小取到secret data中
                 if(memcmp(input.secret.data, tmp, input.secret.secretSize) == 0){
-                    zero += input.secret.secretSize;
+                    zero += input.secret.secretSize;//???
                 }
 
                 input.secret.end = 0;
                 if(total+ret == size && count+1 == numOfChunks) input.secret.end = 1;//如果chunks全部输入完毕则 end=1
                 encoderObj->add(&input);//将当前input 加入到encoder模组
                 totalChunks++;
-                preEnd = chunkEndIndexList[count];
+                preEnd = chunkEndIndexList[count];//更新下一次计算chunk大小的起点
                 count++;
             }//以上为将buffer的每个chunk用input输入到encoder中
             total+=ret;//total是所有buffer加起来 即文件大小

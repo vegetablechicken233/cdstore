@@ -151,7 +151,7 @@ void Chunker::fixSizeChunking(unsigned char *buffer, int bufferSize, int *chunkE
  * @param chunkEndIndexList - a list for returning the end index of each chunk <return>
  * @param numOfChunks - the number of chunks <return>
  */
-void Chunker::varSizeChunking(unsigned char *buffer, int bufferSize, int *chunkEndIndexList, int *numOfChunks){
+void Chunker::varSizeChunking(unsigned char *buffer, int bufferSize, int *chunkEndIndexList, int *numOfChunks){//变长切割CDC
     int chunkEndIndex, chunkEndIndexLimit;
     uint32_t winFp; /*the fingerprint of a window*/
     int i;
@@ -167,13 +167,13 @@ void Chunker::varSizeChunking(unsigned char *buffer, int bufferSize, int *chunkE
         if (chunkEndIndexLimit >= bufferSize) chunkEndIndexLimit = bufferSize - 1;		
 
         /*calculate the fingerprint of the first window*/
-        winFp = 0;
+        winFp = 0;//CDC确定窗口所需要的fp
         for (i = 0; i < slidingWinSize_; i++) {
             /*winFp = winFp + ((buffer[chunkEndIndex-i] * powerLUT_[i]) mod polyMOD_)*/
             winFp = winFp + ((buffer[chunkEndIndex-i] * powerLUT_[i]) & (polyMOD_ - 1));
         }
         /*winFp = winFp mod polyMOD_*/
-        winFp = winFp & (polyMOD_ - 1);
+        winFp = winFp & (polyMOD_ - 1);//以上为计算以当前chunk尾 为标准 第一个slide window的fp值
 
         while (((winFp & anchorMask_) != anchorValue_) && (chunkEndIndex < chunkEndIndexLimit)) {
             /*move the window forward by 1 byte*/
@@ -182,16 +182,17 @@ void Chunker::varSizeChunking(unsigned char *buffer, int bufferSize, int *chunkE
             /*update the fingerprint based on rolling hash*/
             /*winFp = ((winFp + removeLUT_[buffer[chunkEndIndex-slidingWinSize_]]) * polyBase_ + buffer[chunkEndIndex]) mod polyMOD_*/
             winFp = ((winFp + removeLUT_[buffer[chunkEndIndex-slidingWinSize_]]) * polyBase_ + buffer[chunkEndIndex]) & (polyMOD_ - 1); 
+            //由上一次的winFP计算出下一次的winfp 之后进行掩码 再比对
         }
 
         /*record the end index of a chunk*/
-        chunkEndIndexList[(*numOfChunks)] = chunkEndIndex;
+        chunkEndIndexList[(*numOfChunks)] = chunkEndIndex;//记录该被选中chunk尾部在buffer第几个字节处 并保存到list中
 
         /*go on for the next chunk*/
-        chunkEndIndex = chunkEndIndexList[(*numOfChunks)] + minChunkSize_;
-        chunkEndIndexLimit = chunkEndIndexList[(*numOfChunks)] + maxChunkSize_;
+        chunkEndIndex = chunkEndIndexList[(*numOfChunks)] + minChunkSize_;//调整下一个chunk的尾指针
+        chunkEndIndexLimit = chunkEndIndexList[(*numOfChunks)] + maxChunkSize_;//设置最大chunk限制
         (*numOfChunks)++;
-    }
+    }//未到达终点时继续返回循环
 
     /*deal with the tail of the buffer*/
     if (((*numOfChunks) == 0) || (((*numOfChunks) > 0) && (chunkEndIndexList[(*numOfChunks)-1] != bufferSize -1))) { 

@@ -95,7 +95,7 @@ void* Uploader::thread_handler(void* param){
  * @param subset - input number of clouds to be chosen
  *
  */
-Uploader::Uploader(int total, int subset, int userID){
+Uploader::Uploader(int total, int subset, int userID){//在main.cc中 n n USERID
     total_ = total;
     subset_ = subset;
 
@@ -128,7 +128,7 @@ Uploader::Uploader(int total, int subset, int userID){
         param_t* param = (param_t*)malloc(sizeof(param_t));      // thread's parameter
         param->cloudIndex = i;
         param->obj = this;
-        pthread_create(&tid_[i],0,&thread_handler, (void*)param);
+        pthread_create(&tid_[i],0,&thread_handler, (void*)param); //线程创造
 
         /* line by line read config file*/
         int ret = fscanf(fp,"%s",line);
@@ -256,7 +256,7 @@ int Uploader::updateHeader(int cloudIndex){
  *
  */
 int Uploader::add(Item_t* item, int size, int index){
-    ringBuffer_[index]->Insert(item, size);
+    ringBuffer_[index]->Insert(item, size);//将传递来的Item加入uploader的循环数组
     return 1;
 }
 
