@@ -151,7 +151,7 @@ void Chunker::fixSizeChunking(unsigned char *buffer, int bufferSize, int *chunkE
  * @param chunkEndIndexList - a list for returning the end index of each chunk <return>
  * @param numOfChunks - the number of chunks <return>
  */
-void Chunker::varSizeChunking(unsigned char *buffer, int bufferSize, int *chunkEndIndexList, int *numOfChunks){//±ä³¤ÇĞ¸îCDC
+void Chunker::varSizeChunking(unsigned char *buffer, int bufferSize, int *chunkEndIndexList, int *numOfChunks){//å˜é•¿åˆ‡å‰²CDC
     int chunkEndIndex, chunkEndIndexLimit;
     uint32_t winFp; /*the fingerprint of a window*/
     int i;
@@ -167,13 +167,13 @@ void Chunker::varSizeChunking(unsigned char *buffer, int bufferSize, int *chunkE
         if (chunkEndIndexLimit >= bufferSize) chunkEndIndexLimit = bufferSize - 1;		
 
         /*calculate the fingerprint of the first window*/
-        winFp = 0;//CDCÈ·¶¨´°¿ÚËùĞèÒªµÄfp
+        winFp = 0;//CDCç¡®å®šçª—å£æ‰€éœ€è¦çš„fp
         for (i = 0; i < slidingWinSize_; i++) {
             /*winFp = winFp + ((buffer[chunkEndIndex-i] * powerLUT_[i]) mod polyMOD_)*/
             winFp = winFp + ((buffer[chunkEndIndex-i] * powerLUT_[i]) & (polyMOD_ - 1));
         }
         /*winFp = winFp mod polyMOD_*/
-        winFp = winFp & (polyMOD_ - 1);//ÒÔÉÏÎª¼ÆËãÒÔµ±Ç°chunkÎ² Îª±ê×¼ µÚÒ»¸öslide windowµÄfpÖµ
+        winFp = winFp & (polyMOD_ - 1);//ä»¥ä¸Šä¸ºè®¡ç®—ä»¥å½“å‰chunkå°¾ ä¸ºæ ‡å‡† ç¬¬ä¸€ä¸ªslide windowçš„fpå€¼
 
         while (((winFp & anchorMask_) != anchorValue_) && (chunkEndIndex < chunkEndIndexLimit)) {
             /*move the window forward by 1 byte*/
@@ -182,17 +182,17 @@ void Chunker::varSizeChunking(unsigned char *buffer, int bufferSize, int *chunkE
             /*update the fingerprint based on rolling hash*/
             /*winFp = ((winFp + removeLUT_[buffer[chunkEndIndex-slidingWinSize_]]) * polyBase_ + buffer[chunkEndIndex]) mod polyMOD_*/
             winFp = ((winFp + removeLUT_[buffer[chunkEndIndex-slidingWinSize_]]) * polyBase_ + buffer[chunkEndIndex]) & (polyMOD_ - 1); 
-            //ÓÉÉÏÒ»´ÎµÄwinFP¼ÆËã³öÏÂÒ»´ÎµÄwinfp Ö®ºó½øĞĞÑÚÂë ÔÙ±È¶Ô
+            //ç”±ä¸Šä¸€æ¬¡çš„winFPè®¡ç®—å‡ºä¸‹ä¸€æ¬¡çš„winfp ä¹‹åè¿›è¡Œæ©ç  å†æ¯”å¯¹
         }
 
         /*record the end index of a chunk*/
-        chunkEndIndexList[(*numOfChunks)] = chunkEndIndex;//¼ÇÂ¼¸Ã±»Ñ¡ÖĞchunkÎ²²¿ÔÚbufferµÚ¼¸¸ö×Ö½Ú´¦ ²¢±£´æµ½listÖĞ
+        chunkEndIndexList[(*numOfChunks)] = chunkEndIndex;//è®°å½•è¯¥è¢«é€‰ä¸­chunkå°¾éƒ¨åœ¨bufferç¬¬å‡ ä¸ªå­—èŠ‚å¤„ å¹¶ä¿å­˜åˆ°listä¸­
 
         /*go on for the next chunk*/
-        chunkEndIndex = chunkEndIndexList[(*numOfChunks)] + minChunkSize_;//µ÷ÕûÏÂÒ»¸öchunkµÄÎ²Ö¸Õë
-        chunkEndIndexLimit = chunkEndIndexList[(*numOfChunks)] + maxChunkSize_;//ÉèÖÃ×î´óchunkÏŞÖÆ
+        chunkEndIndex = chunkEndIndexList[(*numOfChunks)] + minChunkSize_;//è°ƒæ•´ä¸‹ä¸€ä¸ªchunkçš„å°¾æŒ‡é’ˆ
+        chunkEndIndexLimit = chunkEndIndexList[(*numOfChunks)] + maxChunkSize_;//è®¾ç½®æœ€å¤§chunké™åˆ¶
         (*numOfChunks)++;
-    }//Î´µ½´ïÖÕµãÊ±¼ÌĞø·µ»ØÑ­»·
+    }//æœªåˆ°è¾¾ç»ˆç‚¹æ—¶ç»§ç»­è¿”å›å¾ªç¯
 
     /*deal with the tail of the buffer*/
     if (((*numOfChunks) == 0) || (((*numOfChunks) > 0) && (chunkEndIndexList[(*numOfChunks)-1] != bufferSize -1))) { 

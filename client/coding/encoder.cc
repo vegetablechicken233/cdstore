@@ -12,44 +12,44 @@ using namespace std;
  *
  * @param param - parameters for encode thread
  */
-void* Encoder::thread_handler(void* param){//´Ë´¦µÄparamÓµÓĞÒ»¸öindexºÍobj£¬¼´Ö¸Ïòencoder×ÔÉíµÄÖ¸Õë£¬ÔÚ¹¹ÔìÖĞ¶ÁÈ¡µÄÊÇÒ»¸öindexÑ­»·¸Ä±äµÄ±äÁ¿¡£
+void* Encoder::thread_handler(void* param){//æ­¤å¤„çš„paramæ‹¥æœ‰ä¸€ä¸ªindexå’Œobjï¼Œå³æŒ‡å‘encoderè‡ªèº«çš„æŒ‡é’ˆï¼Œåœ¨æ„é€ ä¸­è¯»å–çš„æ˜¯ä¸€ä¸ªindexå¾ªç¯æ”¹å˜çš„å˜é‡ã€‚
 
     /* parse parameters */
     int index = ((param_encoder*)param)->index;
-    Encoder* obj = ((param_encoder*)param)->obj;//³õÊ¼»¯ indexÎª¿ªÍ· ´«µİÖ¸Õë
+    Encoder* obj = ((param_encoder*)param)->obj;//åˆå§‹åŒ– indexä¸ºå¼€å¤´ ä¼ é€’æŒ‡é’ˆ
     free(param);
 
     /* main loop for getting secrets and encode them into shares*/
-    while(true){//Ïß³ÌµÄÖ÷ÒªÑ­»·
+    while(true){//çº¿ç¨‹çš„ä¸»è¦å¾ªç¯
 
         /* get an object from input buffer */
         Secret_Item_t tempENCODEchunk;
         ShareChunk_Item_t input;
-        obj->inputbuffer_[index]->Extract(&tempENCODEchunk);//´ÓADDº¯ÊıÖĞÌáÈ¡³öµ±Ç°Ïß³Ì¶ÔÓ¦Ñ­»·bufferÖĞµÄsecret_item·Åµ½tempchunkÎÄ¼şÖĞ£¨¼´Ğ¡µÄchunks£©
-        //ÔÚÕâ¸ö¾Ö²¿ÖĞµÄtemp¼´Îª
+        obj->inputbuffer_[index]->Extract(&tempENCODEchunk);//ä»ADDå‡½æ•°ä¸­æå–å‡ºå½“å‰çº¿ç¨‹å¯¹åº”å¾ªç¯bufferä¸­çš„secret_itemæ”¾åˆ°tempchunkæ–‡ä»¶ä¸­ï¼ˆå³å°çš„chunksï¼‰
+        //åœ¨è¿™ä¸ªå±€éƒ¨ä¸­çš„tempå³ä¸º
         /* get the object type */
-        int type = tempENCODEchunk.type;//¶ÁÈ¡chunkÀàĞÍ
-        input.type = type;//·Åµ½shareÖĞ
+        int type = tempENCODEchunk.type;//è¯»å–chunkç±»å‹
+        input.type = type;//æ”¾åˆ°shareä¸­
 
         /* copy content into input object */
         if(type == FILE_OBJECT){
             /* if it's file header */
-            memcpy(&input.file_header, &tempENCODEchunk.file_header, sizeof(fileHead_t));//Èç¹ûÊÇÔò½«Í·ÎÄ¼ş´óĞ¡µÄÊı¾İcopyµ½sharechunk_item inputÖĞ union½á¹¹ÏàÍ¬
+            memcpy(&input.file_header, &tempENCODEchunk.file_header, sizeof(fileHead_t));//å¦‚æœæ˜¯åˆ™å°†å¤´æ–‡ä»¶å¤§å°çš„æ•°æ®copyåˆ°sharechunk_item inputä¸­ unionç»“æ„ç›¸åŒ
         }else{
 
             /* if it's share object */
             obj->encodeObj_[index]->encoding(tempENCODEchunk.secret.data, tempENCODEchunk.secret.secretSize, input.share_chunk.data, &(input.share_chunk.shareSize));
-            //encodeObjÎªCDCodecÄ£¿é ÕâÊÇµÚINDEX¸öÏß³Ì ÔÚCDcodec.hhÖĞÄ¬ÈÏ½«¼ÓÃÜ·½Ê½ÉèÎªCANT-OS¡£
+            //encodeObjä¸ºCDCodecæ¨¡å— è¿™æ˜¯ç¬¬INDEXä¸ªçº¿ç¨‹ åœ¨CDcodec.hhä¸­é»˜è®¤å°†åŠ å¯†æ–¹å¼è®¾ä¸ºCANT-OSã€‚
             input.share_chunk.secretID = tempENCODEchunk.secret.secretID;
-            input.share_chunk.secretSize = tempENCODEchunk.secret.secretSize;//¶àÁËÒ»¸öshareÎÄ¼şµÄ´óĞ¡shareSize Í¬Ê±data×ª±äÎªÁËn·İµÄ
-            //sharesize±íÊ¾µÄÊÇÃ¿¸öshareµÄ´óĞ¡£¬¹²n¸ö
-            //encoding·½·¨ÔÚCDCode.ccÖĞ
-            input.share_chunk.end = tempENCODEchunk.secret.end;//ÕâËÄ²½½«ÊôÓÚÔ´secret×ª±äÎªshareÎÄ¼ş
-            //¿ÉÒÔ´ÓÕâÀïĞŞ¸Ä³ÉÎªÆÕÍ¨µÄ¼ÓÃÜ£¬²»ĞèÒªÃØÃÜ¹²Ïí
+            input.share_chunk.secretSize = tempENCODEchunk.secret.secretSize;//å¤šäº†ä¸€ä¸ªshareæ–‡ä»¶çš„å¤§å°shareSize åŒæ—¶dataè½¬å˜ä¸ºäº†nä»½çš„
+            //sharesizeè¡¨ç¤ºçš„æ˜¯æ¯ä¸ªshareçš„å¤§å°ï¼Œå…±nä¸ª
+            //encodingæ–¹æ³•åœ¨CDCode.ccä¸­
+            input.share_chunk.end = tempENCODEchunk.secret.end;//è¿™å››æ­¥å°†å±äºæºsecretè½¬å˜ä¸ºshareæ–‡ä»¶
+            //å¯ä»¥ä»è¿™é‡Œä¿®æ”¹æˆä¸ºæ™®é€šçš„åŠ å¯†ï¼Œä¸éœ€è¦ç§˜å¯†å…±äº«
         }
 
         /* add the object to output buffer */
-        obj->outputbuffer_[index]->Insert(&input,sizeof(input));//½«indexÏß³ÌµÄoutbufferÑ­»·Êı×é¸üĞÂ£¬²åÈë×îĞÂµÄshareÎÄ¼ş
+        obj->outputbuffer_[index]->Insert(&input,sizeof(input));//å°†indexçº¿ç¨‹çš„outbufferå¾ªç¯æ•°ç»„æ›´æ–°ï¼Œæ’å…¥æœ€æ–°çš„shareæ–‡ä»¶
     }
     return NULL;
 }
@@ -59,7 +59,7 @@ void* Encoder::thread_handler(void* param){//´Ë´¦µÄparamÓµÓĞÒ»¸öindexºÍobj£¬¼´Ö¸
  *
  * @param param - parameters for collect thread
  */
-void* Encoder::collect(void* param){//´«²ÎÎª´ËencoderµÄÖ¸Õë
+void* Encoder::collect(void* param){//ä¼ å‚ä¸ºæ­¤encoderçš„æŒ‡é’ˆ
     /* index for sequencially collect shares */
     int nextBufferIndex = 0;
 
@@ -67,18 +67,18 @@ void* Encoder::collect(void* param){//´«²ÎÎª´ËencoderµÄÖ¸Õë
     Encoder* obj = (Encoder*)param;
 
     /* main loop for collecting shares */
-    while(true){//Ñ­»·
+    while(true){//å¾ªç¯
 
         /* extract an object from a certain ringbuffer */
         ShareChunk_Item_t temp;
-        obj->outputbuffer_[nextBufferIndex]->Extract(&temp);//½«thread EncodeÍê³ÉµÄÃØÃÜchunkµ¼³öµ½temp
-        nextBufferIndex = (nextBufferIndex + 1)%NUM_THREADS;//ÂÖÁ÷´ÓÃ¿Ò»¸öencodeÏß³ÌµÄoutputÖĞÈ¡³öÒ»¸öchunk
+        obj->outputbuffer_[nextBufferIndex]->Extract(&temp);//å°†thread Encodeå®Œæˆçš„ç§˜å¯†chunkå¯¼å‡ºåˆ°temp
+        nextBufferIndex = (nextBufferIndex + 1)%NUM_THREADS;//è½®æµä»æ¯ä¸€ä¸ªencodeçº¿ç¨‹çš„outputä¸­å–å‡ºä¸€ä¸ªchunk
 
         /* get the object type */
-        int type = temp.type;//»ñÈ¡¸ÃchunkÀàĞÍ
+        int type = temp.type;//è·å–è¯¥chunkç±»å‹
 
-        Uploader::Item_t input;//ĞèÒª°ÑÔ­À´µÄshareÎÄ¼ş×ª»¯ÎªuploaderĞèÒªµÄ¸ñÊ½item
-        //itemÖĞµÄunionÔÚ×÷ÎªheaderobjÊ± ¾ßÓĞÒ»¸öfileheader¼´ shareÎÄ¼şMDhead ºÍ´æ´¢Êı¾İµÄdata
+        Uploader::Item_t input;//éœ€è¦æŠŠåŸæ¥çš„shareæ–‡ä»¶è½¬åŒ–ä¸ºuploaderéœ€è¦çš„æ ¼å¼item
+        //itemä¸­çš„unionåœ¨ä½œä¸ºheaderobjæ—¶ å…·æœ‰ä¸€ä¸ªfileheaderå³ shareæ–‡ä»¶MDhead å’Œå­˜å‚¨æ•°æ®çš„data
         if(type == FILE_OBJECT){
 
             /* if it's file header, directly transform the object to uploader */
@@ -95,19 +95,19 @@ void* Encoder::collect(void* param){//´«²ÎÎª´ËencoderµÄÖ¸Õë
             int tmp_s;
 
             //encode pathname into shares for privacy
-            obj->encodeObj_[0]->encoding(temp.file_header.data, temp.file_header.fullNameSize, tmp, &(tmp_s));//ÓÃpid=0µÄÏß³Ì¼ÓÃÜ
+            obj->encodeObj_[0]->encoding(temp.file_header.data, temp.file_header.fullNameSize, tmp, &(tmp_s));//ç”¨pid=0çš„çº¿ç¨‹åŠ å¯†
             
-            input.fileObj.file_header.fullNameSize = tmp_s;//±£´æ¼ÓÃÜºóµÄÎÄ¼şÃû´óĞ¡
+            input.fileObj.file_header.fullNameSize = tmp_s;//ä¿å­˜åŠ å¯†åçš„æ–‡ä»¶åå¤§å°
 
-            /* copy file name Èç¹ûÖ±½ÓÊ¹ÓÃ¸´ÖÆ²»¼ÓÃÜµÄ»° */
+            /* copy file name å¦‚æœç›´æ¥ä½¿ç”¨å¤åˆ¶ä¸åŠ å¯†çš„è¯ */
             //memcpy(input.fileObj.data, temp.file_header.data, temp.file_header.fullNameSize);
 
 #ifndef ENCODE_ONLY_MODE
             /* add the object to each cloud's uploader buffer */
-            for(int i = 0; i < obj->n_; i++){//Ïòn¸öÖĞµÄÃ¿¸ö·şÎñÆ÷ÉÏ´«
+            for(int i = 0; i < obj->n_; i++){//å‘nä¸ªä¸­çš„æ¯ä¸ªæœåŠ¡å™¨ä¸Šä¼ 
 
                 //copy the corresponding share as file name
-                memcpy(input.fileObj.data, tmp+i*tmp_s, input.fileObj.file_header.fullNameSize);//´Ótmp¿ªÊ¼ ¸øÃ¿¸öi·şÎñÆ÷Ïà¶ÔÓ¦µÄµÚi¸öshare ÀïÃæÊÇ¼ÓÃÜºóµÄÃû×Ö
+                memcpy(input.fileObj.data, tmp+i*tmp_s, input.fileObj.file_header.fullNameSize);//ä»tmpå¼€å§‹ ç»™æ¯ä¸ªiæœåŠ¡å™¨ç›¸å¯¹åº”çš„ç¬¬iä¸ªshare é‡Œé¢æ˜¯åŠ å¯†åçš„åå­—
                 obj->uploadObj_->add(&input, sizeof(input), i);
             }
 #endif
@@ -122,7 +122,7 @@ void* Encoder::collect(void* param){//´«²ÎÎª´ËencoderµÄÖ¸Õë
                 input.shareObj.share_header.secretID = temp.share_chunk.secretID;
                 input.shareObj.share_header.secretSize = temp.share_chunk.secretSize;
                 input.shareObj.share_header.shareSize = shareSize;
-                memcpy(input.shareObj.data, temp.share_chunk.data+(i*shareSize), shareSize);//´Óshare_chunk.data+(i*shareSize)ÖĞÃ¿¸ôsharesizeÈ¡³öÒ»¸öshare´¢´æµ½shareobj.dataÖĞ
+                memcpy(input.shareObj.data, temp.share_chunk.data+(i*shareSize), shareSize);//ä»share_chunk.data+(i*shareSize)ä¸­æ¯éš”sharesizeå–å‡ºä¸€ä¸ªshareå‚¨å­˜åˆ°shareobj.dataä¸­
 #ifndef ENCODE_ONLY_MODE
 #endif
                 /* see if it's the last secret of a file */
@@ -144,7 +144,7 @@ void* Encoder::collect(void* param){//´«²ÎÎª´ËencoderµÄÖ¸Õë
  * see if it's end of encoding file
  *
  */
-void Encoder::indicateEnd(){//Î¬³Ö ¿´ÊÇ·ñÏß³ÌÒÑ¾­ÔËĞĞÍê±Ï
+void Encoder::indicateEnd(){//ç»´æŒ çœ‹æ˜¯å¦çº¿ç¨‹å·²ç»è¿è¡Œå®Œæ¯•
     pthread_join(tid_[NUM_THREADS],NULL);
 }
 
@@ -170,15 +170,15 @@ Encoder::Encoder(int type, int n, int m, int r, int securetype, Uploader* upload
     outputbuffer_ = (RingBuffer<ShareChunk_Item_t>**)malloc(sizeof(RingBuffer<ShareChunk_Item_t>*)*NUM_THREADS);
 
     /* initialization of objects */
-    for (i = 0; i < NUM_THREADS; i++){//ÒÔiÎªÑ­»·NUM_THEARDS¸öÏß³Ì ´Ó0µ½NUM-1
+    for (i = 0; i < NUM_THREADS; i++){//ä»¥iä¸ºå¾ªç¯NUM_THEARDSä¸ªçº¿ç¨‹ ä»0åˆ°NUM-1
         inputbuffer_[i] = new RingBuffer<Secret_Item_t>(RB_SIZE, true, 1);
         outputbuffer_[i] = new RingBuffer<ShareChunk_Item_t>(RB_SIZE, true, 1);
-        cryptoObj_[i] = new CryptoPrimitive(securetype);//¼ÓÃÜÄ£¿éÉú³É
-        encodeObj_[i] = new CDCodec(type,n,m,r, cryptoObj_[i]);//±àÂëÄ£¿é³õÊ¼»¯
-        //ÔÚÕâÀïÉú³ÉÁËº¯ÊıÖĞĞèÒªµÄencodeObj ÊÇCDCodecÀà
+        cryptoObj_[i] = new CryptoPrimitive(securetype);//åŠ å¯†æ¨¡å—ç”Ÿæˆ
+        encodeObj_[i] = new CDCodec(type,n,m,r, cryptoObj_[i]);//ç¼–ç æ¨¡å—åˆå§‹åŒ–
+        //åœ¨è¿™é‡Œç”Ÿæˆäº†å‡½æ•°ä¸­éœ€è¦çš„encodeObj æ˜¯CDCodecç±»
         param_encoder* temp = (param_encoder*)malloc(sizeof(param_encoder));
         temp->index = i;
-        temp->obj = this;//ÓÃÓÚÔÚ
+        temp->obj = this;//ç”¨äºåœ¨
 
         /* create encoding threads */
         pthread_create(&tid_[i],0,&thread_handler,(void*)temp);
@@ -187,7 +187,7 @@ Encoder::Encoder(int type, int n, int m, int r, int securetype, Uploader* upload
     uploadObj_ = uploaderObj;
 
     /* create collect thread */
-    pthread_create(&tid_[NUM_THREADS],0,&collect,(void*)this);//Ö»¿ªÁËÒ»¸öĞòÁĞºÅÎªNUM_THERADSµÄÏß³ÌÀ´collect
+    pthread_create(&tid_[NUM_THREADS],0,&collect,(void*)this);//åªå¼€äº†ä¸€ä¸ªåºåˆ—å·ä¸ºNUM_THERADSçš„çº¿ç¨‹æ¥collect
 }
 
 /*
@@ -214,7 +214,7 @@ Encoder::~Encoder(){
  */
 int Encoder::add(Secret_Item_t* item){
     /* add item */
-    inputbuffer_[nextAddIndex_]->Insert(item, sizeof(Secret_Item_t));//ÏòÑ­»·bufferÇøÖĞÌí¼ÓĞÂ²¿·Ö¹©Ïß³ÌÊ¹ÓÃ
+    inputbuffer_[nextAddIndex_]->Insert(item, sizeof(Secret_Item_t));//å‘å¾ªç¯bufferåŒºä¸­æ·»åŠ æ–°éƒ¨åˆ†ä¾›çº¿ç¨‹ä½¿ç”¨
 
     /* increment the index */
     nextAddIndex_ = (nextAddIndex_+1)%NUM_THREADS;

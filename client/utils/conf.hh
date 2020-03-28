@@ -42,8 +42,12 @@ class Configuration{
   public:
       /* constructor */
       Configuration(){
-        n_ = 4;
-        m_ = 1;
+        //n_ = 4;
+        //m_ = 1; 容错
+        //k_ = n_ - m_; 最少几个可以
+        //r_ = k_ - 1; 最大几个不可以
+        n_ = 1;
+        m_ = 0;
         k_ = n_ - m_;
         r_ = k_ - 1;
         secretBufferSize_ = 16*1024;

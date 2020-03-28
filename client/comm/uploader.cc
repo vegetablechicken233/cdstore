@@ -17,7 +17,7 @@ void* Uploader::thread_handler(void* param){
     /* get input parameters */
     param_t* temp = (param_t*)param;
     int cloudIndex = temp->cloudIndex;
-    Uploader* obj = temp->obj;
+    Uploader* obj = temp->obj;//å–å¾—è‡ªèº«æŒ‡é’ˆ
     free(temp);
 
     Item_t output; 
@@ -95,7 +95,7 @@ void* Uploader::thread_handler(void* param){
  * @param subset - input number of clouds to be chosen
  *
  */
-Uploader::Uploader(int total, int subset, int userID){//ÔÚmain.ccÖĞ n n USERID
+Uploader::Uploader(int total, int subset, int userID){//åœ¨main.ccä¸­ é»˜è®¤ä¸º n n USERID
     total_ = total;
     subset_ = subset;
 
@@ -112,7 +112,7 @@ Uploader::Uploader(int total, int subset, int userID){//ÔÚmain.ccÖĞ n n USERID
 
 
     /* read server ip & port from config file */
-    FILE* fp = fopen("./config","rb");
+    FILE* fp = fopen("./config","rb");//è¯»å–
     char line[225];
     const char ch[2] = ":";
 
@@ -128,7 +128,7 @@ Uploader::Uploader(int total, int subset, int userID){//ÔÚmain.ccÖĞ n n USERID
         param_t* param = (param_t*)malloc(sizeof(param_t));      // thread's parameter
         param->cloudIndex = i;
         param->obj = this;
-        pthread_create(&tid_[i],0,&thread_handler, (void*)param); //Ïß³Ì´´Ôì
+        pthread_create(&tid_[i],0,&thread_handler, (void*)param); //çº¿ç¨‹åˆ›é€ 
 
         /* line by line read config file*/
         int ret = fscanf(fp,"%s",line);
@@ -256,7 +256,7 @@ int Uploader::updateHeader(int cloudIndex){
  *
  */
 int Uploader::add(Item_t* item, int size, int index){
-    ringBuffer_[index]->Insert(item, size);//½«´«µİÀ´µÄItem¼ÓÈëuploaderµÄÑ­»·Êı×é
+    ringBuffer_[index]->Insert(item, size);//å°†ä¼ é€’æ¥çš„ItemåŠ å…¥uploaderçš„å¾ªç¯æ•°ç»„
     return 1;
 }
 

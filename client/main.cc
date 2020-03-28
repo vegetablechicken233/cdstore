@@ -36,15 +36,15 @@ void usage(char *s){
 }
 
 int main(int argc, char *argv[]){
-    /* argument test ²âÊÔÊÇ·ñÂú²ÎÊı */
+    /* argument test æµ‹è¯•æ˜¯å¦æ»¡å‚æ•° */
     if (argc != 5) usage(NULL);
 
-    /* get options ½«²ÎÊıµ¼Èë */
+    /* get options å°†å‚æ•°å¯¼å…¥ */
     int userID = atoi(argv[2]);
     char* opt = argv[3];
     char* securesetting = argv[4];
 
-    /* read file ¶ÁÈ¡ */
+    /* read file è¯»å– */
 
     unsigned char * buffer;
     int *chunkEndIndexList;
@@ -62,13 +62,13 @@ int main(int argc, char *argv[]){
 
     confObj = new Configuration();
     /* fix parameters here */
-    /* TO DO: load from config file ¶ÁÈ¡conf.hhÖĞµÄÄ¬ÈÏÅäÖÃ */
+    /* TO DO: load from config file è¯»å–conf.hhä¸­çš„é»˜è®¤é…ç½® */
     n = confObj->getN();
     m = confObj->getM();
     k = confObj->getK();
     r = confObj->getR();
 
-    /* initialize buffers Éú³É»º³åÇø */
+    /* initialize buffers ç”Ÿæˆç¼“å†²åŒº */
     int bufferSize = confObj->getBufferSize();
     int chunkEndIndexListSize = confObj->getListSize();
     int secretBufferSize = confObj->getSecretBufferSize();
@@ -81,13 +81,13 @@ int main(int argc, char *argv[]){
     buffer = (unsigned char*) malloc (sizeof(unsigned char)*bufferSize);
     chunkEndIndexList = (int*)malloc(sizeof(int)*chunkEndIndexListSize);
     secretBuffer = (unsigned char*)malloc(sizeof(unsigned char) * secretBufferSize);
-    shareBuffer = (unsigned char*)malloc(sizeof(unsigned char) * shareBufferSize);//·ÖÅäÄÚ´æ¿Õ¼ä
+    shareBuffer = (unsigned char*)malloc(sizeof(unsigned char) * shareBufferSize);//åˆ†é…å†…å­˜ç©ºé—´
 
-    /* initialize share ID list Éú³Éshare ID µÄÁĞ±í */
+    /* initialize share ID list ç”Ÿæˆshare ID çš„åˆ—è¡¨ */
     kShareIDList = (int*)malloc(sizeof(int)*k);
     for (i = 0; i < k; i++) kShareIDList[i] = i;
 
-    /* full file name process ¼ì²âÎÄ¼şÃû³¤¶È */
+    /* full file name process æ£€æµ‹æ–‡ä»¶åé•¿åº¦ */
     int namesize = 0;
     while(argv[1][namesize] != '\0'){
         namesize++;
@@ -96,23 +96,23 @@ int main(int argc, char *argv[]){
 
     /* parse secure parameters */
     int securetype = LOW_SEC_PAIR_TYPE;
-    if(strncmp(securesetting,"HIGH", 4) == 0) securetype = HIGH_SEC_PAIR_TYPE;//¸ù¾İ²ÎÊıÑ¡Ôñ¼ÓÃÜ·½Ê½
+    if(strncmp(securesetting,"HIGH", 4) == 0) securetype = HIGH_SEC_PAIR_TYPE;//æ ¹æ®å‚æ•°é€‰æ‹©åŠ å¯†æ–¹å¼
 
-    if (strncmp(opt,"-u",2) == 0 || strncmp(opt, "-a", 2) == 0){//Èç¹û·½Ê½ÊÇupload»òÕßaµÄ»°
+    if (strncmp(opt,"-u",2) == 0 || strncmp(opt, "-a", 2) == 0){//å¦‚æœæ–¹å¼æ˜¯uploadæˆ–è€…açš„è¯
 
         FILE * fin = fopen(argv[1],"r");
 
-        /* get file size È¡µÃÎÄ¼ş´óĞ¡ */
+        /* get file size å–å¾—æ–‡ä»¶å¤§å° */
         fseek(fin,0,SEEK_END);
         long size = ftell(fin);	
         fseek(fin,0,SEEK_SET);
         uploaderObj = new Uploader(n,n,userID);
-        encoderObj = new Encoder(CAONT_RS_TYPE, n, m, r, securetype, uploaderObj);//´Ë´¦ÒÑ¾­¿ªÊ¼ÔËĞĞÁ½¸öÏß³Ì ·Ö±ğÊÇencodeºÍupload
-        chunkerObj = new Chunker(VAR_SIZE_TYPE);
+        encoderObj = new Encoder(CAONT_RS_TYPE, n, m, r, securetype, uploaderObj);//æ­¤å¤„å·²ç»å¼€å§‹è¿è¡Œä¸¤ä¸ªçº¿ç¨‹ åˆ†åˆ«æ˜¯encodeå’Œupload
+        chunkerObj = new Chunker(VAR_SIZE_TYPE);//ä¸‰ä¸ªä¸»è¦æ¨¡å—çš„ç”Ÿæˆ
         //chunking
         //
-        Encoder::Secret_Item_t header;//Éú³ÉsecretÍ· Ò»¸öÎÄ¼şÖ»ÓĞÒ»¸ö header ´Ë´¦×÷ÎªunionÖĞµÄheaderÊ¹ÓÃ ±£´æÕû¸öÎÄ¼şµÄ¸ÅÊö
-        //dataÖĞÊÇÎÄ¼şÃû namesizeÖĞÊÇÎÄ¼şÃûËùÕ¼¿Õ¼äÊı sizeÊÇÎÄ¼şËùÕ¼¿Õ¼äÊı
+        Encoder::Secret_Item_t header;//ç”Ÿæˆsecretå¤´ ä¸€ä¸ªæ–‡ä»¶åªæœ‰ä¸€ä¸ª header æ­¤å¤„ä½œä¸ºunionä¸­çš„headerä½¿ç”¨ ä¿å­˜æ•´ä¸ªæ–‡ä»¶çš„æ¦‚è¿°
+        //dataä¸­æ˜¯æ–‡ä»¶å namesizeä¸­æ˜¯æ–‡ä»¶åæ‰€å ç©ºé—´æ•° sizeæ˜¯æ–‡ä»¶æ‰€å ç©ºé—´æ•°
         header.type = 1;
         memcpy(header.file_header.data, argv[1], namesize);
         header.file_header.fullNameSize = namesize;
@@ -120,35 +120,35 @@ int main(int argc, char *argv[]){
 
 
         // do encode
-        encoderObj->add(&header);//½«header²¿·Ö¼ÓÈëencoder
+        encoderObj->add(&header);//å°†headeréƒ¨åˆ†åŠ å…¥encoder
         //uploaderObj->generateMDHead(0,size,(unsigned char*) argv[1],namesize,n,0,0,0,0);
 
         long total = 0;
         int totalChunks = 0;
         while (total < size){
-            int ret = fread(buffer,1,bufferSize,fin);//ÓÉÎÄ¼ş¶ÁÈ¡buffersize×Ö½ÚÊıµÄ×Ö½Ú ±£´æµ½bufferÖĞ ·µ»ØretÎª¶ÁÈ¡µÄ×Ö½ÚÊı 
-            chunkerObj->chunking(buffer,ret,chunkEndIndexList,&numOfChunks);//½«ret´óĞ¡µÄ bufferÇĞ¸îÎª numofchunks ¸öchunk £¨´óĞ¡ÔÚchunker.hh£©²¢°ÑÎ²²¿Ë÷Òı·Åµ½chunkENDindexlist
+            int ret = fread(buffer,1,bufferSize,fin);//ç”±æ–‡ä»¶è¯»å–buffersizeå­—èŠ‚æ•°çš„å­—èŠ‚ ä¿å­˜åˆ°bufferä¸­ è¿”å›retä¸ºè¯»å–çš„å­—èŠ‚æ•° 
+            chunkerObj->chunking(buffer,ret,chunkEndIndexList,&numOfChunks);//å°†retå¤§å°çš„ bufferåˆ‡å‰²ä¸º numofchunks ä¸ªchunk ï¼ˆå¤§å°åœ¨chunker.hhï¼‰å¹¶æŠŠå°¾éƒ¨ç´¢å¼•æ”¾åˆ°chunkENDindexlist
 
             int count = 0;
             int preEnd = -1;
             while(count < numOfChunks){
                 Encoder::Secret_Item_t input;
                 input.type = 0;
-                input.secret.secretID = totalChunks;//ID±íÊ¾ÊÇµÚ¼¸¸öchunk£¬³õÊ¼Îª0
-                input.secret.secretSize = chunkEndIndexList[count] - preEnd;//¼ÆËã³öµ±Ç°¿éµÄ´óĞ¡
-                memcpy(input.secret.data, buffer+preEnd+1, input.secret.secretSize);//½«buffer°´´Óbuffer+preEnd+1¿ªÊ¼¶ÁÒ»¸öchunk´óĞ¡È¡µ½secret dataÖĞ
+                input.secret.secretID = totalChunks;//IDè¡¨ç¤ºæ˜¯ç¬¬å‡ ä¸ªchunkï¼Œåˆå§‹ä¸º0
+                input.secret.secretSize = chunkEndIndexList[count] - preEnd;//è®¡ç®—å‡ºå½“å‰å—çš„å¤§å°
+                memcpy(input.secret.data, buffer+preEnd+1, input.secret.secretSize);//å°†bufferæŒ‰ä»buffer+preEnd+1å¼€å§‹è¯»ä¸€ä¸ªchunkå¤§å°å–åˆ°secret dataä¸­
                 if(memcmp(input.secret.data, tmp, input.secret.secretSize) == 0){
                     zero += input.secret.secretSize;//???
                 }
 
                 input.secret.end = 0;
-                if(total+ret == size && count+1 == numOfChunks) input.secret.end = 1;//Èç¹ûchunksÈ«²¿ÊäÈëÍê±ÏÔò end=1
-                encoderObj->add(&input);//½«µ±Ç°input ¼ÓÈëµ½encoderÄ£×é
+                if(total+ret == size && count+1 == numOfChunks) input.secret.end = 1;//å¦‚æœchunkså…¨éƒ¨è¾“å…¥å®Œæ¯•åˆ™ end=1
+                encoderObj->add(&input);//å°†å½“å‰input åŠ å…¥åˆ°encoderæ¨¡ç»„
                 totalChunks++;
-                preEnd = chunkEndIndexList[count];//¸üĞÂÏÂÒ»´Î¼ÆËãchunk´óĞ¡µÄÆğµã
+                preEnd = chunkEndIndexList[count];//æ›´æ–°ä¸‹ä¸€æ¬¡è®¡ç®—chunkå¤§å°çš„èµ·ç‚¹
                 count++;
-            }//ÒÔÉÏÎª½«bufferµÄÃ¿¸öchunkÓÃinputÊäÈëµ½encoderÖĞ
-            total+=ret;//totalÊÇËùÓĞbuffer¼ÓÆğÀ´ ¼´ÎÄ¼ş´óĞ¡
+            }//ä»¥ä¸Šä¸ºå°†bufferçš„æ¯ä¸ªchunkç”¨inputè¾“å…¥åˆ°encoderä¸­
+            total+=ret;//totalæ˜¯æ‰€æœ‰bufferåŠ èµ·æ¥ å³æ–‡ä»¶å¤§å°
         }
         long long tt = 0, unique = 0;
         uploaderObj->indicateEnd(&tt, &unique);
@@ -162,7 +162,7 @@ int main(int argc, char *argv[]){
 
 
 
-    if (strncmp(opt,"-d",2) == 0 || strncmp(opt, "-a", 2) == 0){//Èç¹ûÊÇdownloadÏÂÔØ
+    if (strncmp(opt,"-d",2) == 0 || strncmp(opt, "-a", 2) == 0){//å¦‚æœæ˜¯downloadä¸‹è½½
         //cdCodecObj = new CDCodec(CAONT_RS_TYPE, n, m, r, cryptoObj);
         decoderObj = new Decoder(CAONT_RS_TYPE, n, m, r, securetype);
         downloaderObj = new Downloader(k,k,userID,decoderObj);

@@ -15,7 +15,7 @@ using namespace std;
  * @param r - confidentiality degree (i.e. maximum number of shares from which nothing can be derived)
  * @param cryptoObj - the CryptoPrimitive instance for hash generation and data encryption
  */
-CDCodec::CDCodec(int CDType, int n, int m, int r, CryptoPrimitive *cryptoObj) {//Ĭ��ΪCAONT-RS
+CDCodec::CDCodec(int CDType, int n, int m, int r, CryptoPrimitive *cryptoObj) {//默认为CAONT-RS
     int i, j, sum;
 
     CDType_ = CDType;
