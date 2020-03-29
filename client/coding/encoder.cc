@@ -35,8 +35,9 @@ void* Encoder::thread_handler(void* param){//此处的param拥有一个index和o
         if(type == FILE_OBJECT){
             /* if it's file header */
             memcpy(&input.file_header, &tempENCODEchunk.file_header, sizeof(fileHead_t));//如果是则将头文件大小的数据copy到sharechunk_item input中 union结构相同
-        }else{
-
+        }
+        else
+        {
             /* if it's share object */
             obj->encodeObj_[index]->encoding(tempENCODEchunk.secret.data, tempENCODEchunk.secret.secretSize, input.share_chunk.data, &(input.share_chunk.shareSize));
             //encodeObj为CDCodec模块 这是第INDEX个线程 在CDcodec.hh中默认将加密方式设为CANT-OS。
@@ -99,12 +100,12 @@ void* Encoder::collect(void* param){//传参为此encoder的指针
             
             input.fileObj.file_header.fullNameSize = tmp_s;//保存加密后的文件名大小
 
-            /* copy file name 如果直接使用复制不加密的话 */
+            /* copy file name 如果直接使用复制不加密 */
             //memcpy(input.fileObj.data, temp.file_header.data, temp.file_header.fullNameSize);
 
 #ifndef ENCODE_ONLY_MODE
             /* add the object to each cloud's uploader buffer */
-            for(int i = 0; i < obj->n_; i++){//向n个中的每个服务器上传
+            for(int i = 0; i < obj->n_; i++){//向第n个服务器对应的上传模组上传
 
                 //copy the corresponding share as file name
                 memcpy(input.fileObj.data, tmp+i*tmp_s, input.fileObj.file_header.fullNameSize);//从tmp开始 给每个i服务器相对应的第i个share 里面是加密后的名字

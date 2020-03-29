@@ -27,6 +27,7 @@ CDCodec::CDCodec(int CDType, int n, int m, int r, CryptoPrimitive *cryptoObj) {/
     }
 
     if (CDType_ == CRSSS_TYPE) { /*CDCodec based on CRSSS*/
+        /*
         if (n <= 0) {			
             fprintf(stderr, "Error: n should be > 0!\n");				
             exit(1);		
@@ -43,6 +44,7 @@ CDCodec::CDCodec(int CDType, int n, int m, int r, CryptoPrimitive *cryptoObj) {/
             fprintf(stderr, "Error: r should be in (0, n-m)!\n");				
             exit(1);		
         }
+        */
         n_ = n;		
         m_ = m;		
         k_ = n - m;			
@@ -110,6 +112,7 @@ CDCodec::CDCodec(int CDType, int n, int m, int r, CryptoPrimitive *cryptoObj) {/
 
     if ((CDType_ == AONT_RS_TYPE) || (CDType_ == OLD_CAONT_RS_TYPE) || 
             (CDType_ == CAONT_RS_TYPE)) { /*CDCodec based on AONT-RS, old CAONT-RS, or CAONT-RS*/
+        /*
         if (n <= 0) {			
             fprintf(stderr, "Error: n should be > 0!\n");				
             exit(1);		
@@ -126,6 +129,7 @@ CDCodec::CDCodec(int CDType, int n, int m, int r, CryptoPrimitive *cryptoObj) {/
             fprintf(stderr, "Error: r should be = n - m - 1!\n");				
             exit(1);		
         }
+        */
         n_ = n;		
         m_ = m;		
         k_ = n - m;			
