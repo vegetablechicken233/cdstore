@@ -17,6 +17,8 @@ Socket::Socket(char *ip, int port, int userID){
 
     /* initializing socket object */
     hostSock_ = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    //AF_INET为ipv4地址，SOCK_STREAM为面向连接套接字，IPPROTO_TCP为TCP
+    //返回一个int来表示socket
     if(hostSock_ == -1){
         printf("Error initializing socket %d\n", errno);
     }
@@ -35,6 +37,7 @@ Socket::Socket(char *ip, int port, int userID){
                         SO_KEEPALIVE, 
                         (char*)p_int, 
                         sizeof(int))== -1)
+        //设置socket保持连接 允许重用端口和本地地址
             ){
         printf("Error setting options %d\n", errno);
         free(p_int);
@@ -42,13 +45,15 @@ Socket::Socket(char *ip, int port, int userID){
     free(p_int);
 
     /* set socket address */
-    myAddr_.sin_family = AF_INET;
-    myAddr_.sin_port = htons(port);
-    memset(&(myAddr_.sin_zero),0,8);
-    myAddr_.sin_addr.s_addr = inet_addr(ip);
+    myAddr_.sin_family = AF_INET;//地址族为IPV4
+    myAddr_.sin_port = htons(port);//htonl()将主机数转换成无符号长整型的网络字节顺序
+    //16位 TCP/UDP端口号
+    memset(&(myAddr_.sin_zero),0,8);//对齐，无作用
+    myAddr_.sin_addr.s_addr = inet_addr(ip);//32位的IP地址
 
     /* trying to connect socket */
     if(connect(hostSock_, (struct sockaddr*)&myAddr_, sizeof(myAddr_)) == -1){
+        //用于建立与该socket的连接 
         if((err = errno) != EINPROGRESS){
             fprintf(stderr, "Error connecting socket %d\n", errno);
         }
@@ -59,6 +64,7 @@ Socket::Socket(char *ip, int port, int userID){
     int bytecount;
     if ((bytecount = send(hostSock_, &netorder, sizeof(int), 0)) == -1){
         fprintf(stderr, "Error sending userID %d\n", errno);
+        //送去userID
     }
 }
 
@@ -82,6 +88,9 @@ int Socket::genericSend(char *raw, int rawSize){
     int total = 0;
     while (total < rawSize){
         if ((bytecount = send(hostSock_, raw+total, rawSize-total, 0)) == -1){
+            //send用于向socket发送大小为rawsize-total的raw+total数据
+            //返回发送数据总数
+            //为了防止缓冲区
             fprintf(stderr, "Error sending data %d\n", errno);
             return -1;
         }
@@ -110,8 +119,10 @@ int Socket::sendMeta(char * raw, int rawSize){
         fprintf(stderr, "Error sending data %d\n", errno);
         return -1;
     }
+    //先将指示符与大小发送至服务器
 
     genericSend(raw, rawSize);
+    //再发送metadata
     return 0;
 }
 
@@ -153,6 +164,7 @@ int Socket::genericDownload(char * raw, int rawSize){
     int total = 0;
     while (total < rawSize){
         if ((bytecount = recv(hostSock_, raw+total, rawSize-total, 0)) == -1){
+            //从sock下载放到raw
             fprintf(stderr, "Error sending data %d\n", errno);
             return -1;
         }

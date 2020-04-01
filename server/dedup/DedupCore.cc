@@ -210,6 +210,7 @@ bool DedupCore::formatFullFileName_(std::string &fullFileName) {
 
 	return 1;
 }
+//格式化文件名
 
 /*
  * format a directory name into '.../.../shortName/'
@@ -232,6 +233,7 @@ bool DedupCore::formatDirName_(std::string &dirName) {
 
 	return 1;
 }
+//格式化目录名
 
 /*
  * prefix a (directory or file) name with a directory name
@@ -251,6 +253,7 @@ bool DedupCore::addPrefixDir_(const std::string &prefixDirName, std::string &nam
 
 	return 1;
 }
+//对文件或目录名加前缀
 
 /*
  * check if a file (or directory) is accessible
@@ -262,6 +265,7 @@ bool DedupCore::addPrefixDir_(const std::string &prefixDirName, std::string &nam
 inline bool DedupCore::checkFileAccess_(const std::string &name) {
 	return checkFileExistence_(name) && checkFilePermissions_(name);
 }
+//检查文件是否可访问
 
 /*
  * check if a file (or directory) exists
@@ -273,6 +277,7 @@ inline bool DedupCore::checkFileAccess_(const std::string &name) {
 inline bool DedupCore::checkFileExistence_(const std::string &name) {
 	return access(name.c_str(), F_OK) == 0;
 }
+//检查文件是否存在
 
 /*
  * check if a file (or directory) can be accessed with all permissions
@@ -285,6 +290,7 @@ inline bool DedupCore::checkFilePermissions_(const std::string &name) {
 	/*read, write, and execute permissions*/
 	return access(name.c_str(), R_OK|W_OK|X_OK) == 0;
 }
+//查看是否mod为7 可rwx
 
 /*
  * get the size of an opened file
@@ -303,6 +309,7 @@ inline long DedupCore::getFileSize_(FILE *fp) {
 
 	return size;
 }
+//得到一个文件的大小
 
 /*
  * recursively create a directory
@@ -337,6 +344,7 @@ bool DedupCore::createDir_(const std::string &dirName) {
 
 	return 1;
 }
+//创建目录
 
 /*
  * increment a global file name in lexicographical order
@@ -1110,7 +1118,9 @@ bool DedupCore::addFileIntoInodeIndex_(const std::string &fullFileName, const in
  *
  * @return - a boolean value that indicates if the update op succeeds
  */
-bool DedupCore::intraUserIndexUpdate_(char *shareFP, const int &userID, bool &intraUserDupStat) {
+bool DedupCore::intraUserIndexUpdate_(char *shareFP, const int &userID, bool &intraUserDupStat){
+	//pShareMDEntry->shareFP, userID, intraUserDupStatList[numOfShares]
+	//输出bool是否为重
 	char key[KEY_SIZE];
 	char *value;
 	leveldb::Slice *keySlice, *valueSlice;
@@ -1144,10 +1154,12 @@ bool DedupCore::intraUserIndexUpdate_(char *shareFP, const int &userID, bool &in
 		}
 
 		/*if the user owns the key, then update the user reference count*/
+		//如果上传过相同的key值
 		if (intraUserDupStat == 1) {
+			//
 			/*take a step back for updating the user reference count later*/
 			valueOffset -= shareUserRefEntrySize_;
-
+			//调回偏移量到头部
 			valueSize = valueString.size();
 			value = (char *) malloc(valueSize);
 
@@ -1168,6 +1180,7 @@ bool DedupCore::intraUserIndexUpdate_(char *shareFP, const int &userID, bool &in
 
 			/*execute all batched database update ops*/
 			leveldb::Status writeStat = db_->Write(writeOptions_, &batch_);
+			//将更新写入数据库（cnt查阅次数）
 			if (writeStat.ok() == false) {
 				fprintf(stderr, "Error: fail to perform batched writes!\n");
 				fprintf(stderr, "Status: %s \n", writeStat.ToString().c_str());
@@ -1186,7 +1199,7 @@ bool DedupCore::intraUserIndexUpdate_(char *shareFP, const int &userID, bool &in
 		}
 		else {
 			/*do nothing*/
-
+			//如果user并未拥有key 则照常上传
 			/*release the mutex lock DBLock_*/
 			pthread_mutex_unlock(&DBLock_);
 		}
@@ -1198,6 +1211,7 @@ bool DedupCore::intraUserIndexUpdate_(char *shareFP, const int &userID, bool &in
 
 		intraUserDupStat = 0;
 	}	
+	//如果没有找到则值为真
 
 	if (getStat.IsCorruption()) { 
 		/*release the mutex lock DBLock_*/
@@ -1225,6 +1239,7 @@ bool DedupCore::intraUserIndexUpdate_(char *shareFP, const int &userID, bool &in
 
 	return 1;
 }
+//查看上传的文件是否一阶段去重
 
 /*
  * update the index for a share based on inter-user deduplication
@@ -1249,7 +1264,7 @@ bool DedupCore::interUserIndexUpdate_(char *shareFP, const int &userID, const in
 	shareUserRefEntry_t *pShareUserRefEntry;
 	std::string shareContainerName;
 
-	shareFP2IndexKey_(shareFP, key);
+	shareFP2IndexKey_(shareFP, key);//向FP前加‘1’表示share index身份
 	keySlice = new leveldb::Slice(key, KEY_SIZE);
 
 	/*get the mutex lock DBLock_*/
@@ -1257,7 +1272,8 @@ bool DedupCore::interUserIndexUpdate_(char *shareFP, const int &userID, const in
 
 	leveldb::Status getStat = db_->Get(readOptions_, *keySlice, &valueString);
 
-	if (getStat.ok()) { 		
+	if (getStat.ok()) { 
+		//如果数据库内有重复的key值
 		valueOffset = 0;
 		pShareIndexValueHead = (shareIndexValueHead_t *) (valueString.data() + valueOffset);
 		valueOffset += shareIndexValueHeadSize_;
@@ -1367,6 +1383,7 @@ bool DedupCore::interUserIndexUpdate_(char *shareFP, const int &userID, const in
 	}
 
 	if (getStat.IsNotFound()) {
+		//如果数据库中没有重复的key
 		/*release the mutex lock DBLock_*/
 		pthread_mutex_unlock(&DBLock_);
 
@@ -1541,6 +1558,8 @@ bool DedupCore::findOldRecipeFile_(perUserBufferNode_t *targetBufferNode, std::s
 		pInodeIndexValueHead = (inodeIndexValueHead_t *) (valueString.data() + valueOffset);
 		valueOffset += inodeIndexValueHeadSize_;
 
+		//保存头文件并调整偏移量
+
 		/*skip the name*/
 		valueOffset += pInodeIndexValueHead->shortNameSize;
 
@@ -1607,6 +1626,8 @@ bool DedupCore::appendOldRecipeFile_(perUserBufferNode_t *targetBufferNode, std:
 		return 0;	
 	}
 
+	//recipefiledirname是一开始在构造函数中定义的目录
+
 	/*open the recipe file for appending recipes*/
 	FILE *fp = fopen(recipeFileName.c_str(), "rb+");		
 	if (fp == NULL) {
@@ -1631,10 +1652,15 @@ bool DedupCore::appendOldRecipeFile_(perUserBufferNode_t *targetBufferNode, std:
 		return 0;	
 	}	
 
+	//此部分均为寻找file recipe结构 head+entry+entry+entry....+entry
+
 	/*append file recipe entries to the recipe file*/
 	fseek(fp, recipeFileOffset + fileRecipeHeadSize_ + fileRecipeEntrySize_ * (InsFileRecipeHead.numOfShares), SEEK_SET);
+	//将指针调整到目前文件的实际有意义尾部
 	if (fwrite(targetBufferNode->recipeFileBuffer + fileRecipeHeadSize_, 
 				targetBufferNode->recipeFileBufferCurrLen - fileRecipeHeadSize_, 1, fp) != 1){
+		//fwrite：ptr size n stream      FROM ptr to fp
+		//将此条 buffer 中除了head之外的内容写入到fp 
 		fprintf(stderr, "Error: fail to append recipe entries to the file '%s'!\n", recipeFileName.c_str());
 
 		fclose(fp);
@@ -1648,6 +1674,8 @@ bool DedupCore::appendOldRecipeFile_(perUserBufferNode_t *targetBufferNode, std:
 	if (fwrite(&InsFileRecipeHead, fileRecipeHeadSize_, 1, fp) != 1){
 		fprintf(stderr, "Error: fail to update the file recipe head into the file '%s'!\n", recipeFileName.c_str());
 
+		//更新recipe file 
+
 		fclose(fp);
 		return 0;	
 	}	
@@ -1655,6 +1683,8 @@ bool DedupCore::appendOldRecipeFile_(perUserBufferNode_t *targetBufferNode, std:
 	/*renew the two positions of the buffer*/
 	targetBufferNode->recipeFileBufferCurrLen = 0;
 	targetBufferNode->lastRecipeHeadPos = 0;
+
+	//将buffer值清空重置
 
 	fclose(fp);
 	return 1;
@@ -1800,6 +1830,7 @@ bool DedupCore::readShareContainerFromBuffer_(char *shareContainerName,
  */
 bool DedupCore::firstStageDedup(const int &userID, unsigned char *shareMDBuffer, const int &shareMDSize, 
 		bool *intraUserDupStatList, int &numOfShares, int &sentShareDataSize) {
+	//接收user,(unsigned char*)metaBuffer, count, statusList, numOfShare, dataSize
 	fileShareMDHead_t *pFileShareMDHead;
 	shareMDEntry_t *pShareMDEntry;
 	int shareMDBufferOffset = 0;	
@@ -1811,10 +1842,12 @@ bool DedupCore::firstStageDedup(const int &userID, unsigned char *shareMDBuffer,
 	while (shareMDBufferOffset < shareMDSize) {
 		/*read the file share metadata head*/
 		pFileShareMDHead = (fileShareMDHead_t *) (shareMDBuffer + shareMDBufferOffset);
-		shareMDBufferOffset += fileShareMDHeadSize_;		
+		shareMDBufferOffset += fileShareMDHeadSize_;
+		//读取file header部分
 
 		/*skip the file name*/
 		shareMDBufferOffset += pFileShareMDHead->fullNameSize;
+		//跳过文件名（即data）到第一个sharemetadata
 
 		/*check each of the subsequent shares*/
 		for (i = 0; i < pFileShareMDHead->numOfComingSecrets; i++) {
@@ -1825,13 +1858,14 @@ bool DedupCore::firstStageDedup(const int &userID, unsigned char *shareMDBuffer,
 			/*check the intra-user duplicate status*/
 			if (!intraUserIndexUpdate_(pShareMDEntry->shareFP, userID, intraUserDupStatList[numOfShares])) {
 				fprintf(stderr, "Error: fail to update the share index for intra-user duplication in the database!\n");
+			//查重函数
 
 				return 0;
 			}
 			if (intraUserDupStatList[numOfShares] == 0) {
 				sentShareDataSize += pShareMDEntry->shareSize;
 			}
-
+			//如果不重复的话则增加
 			numOfShares++;					
 		}		
 	}
@@ -1854,6 +1888,7 @@ bool DedupCore::firstStageDedup(const int &userID, unsigned char *shareMDBuffer,
  */
 bool DedupCore::secondStageDedup(const int &userID, unsigned char *shareMDBuffer, const int &shareMDSize, 
 		bool *intraUserDupStatList, unsigned char *shareDataBuffer, CryptoPrimitive *cryptoObj) {
+	//user, (unsigned char*)metaBuffer（shareindex）, metaSize, statusList, (unsigned char*)buffer, hashObj
 	perUserBufferNode_t *targetBufferNode;
 	fileShareMDHead_t *pFileShareMDHead;
 	shareMDEntry_t *pShareMDEntry;
@@ -1875,37 +1910,56 @@ bool DedupCore::secondStageDedup(const int &userID, unsigned char *shareMDBuffer
 	/*find the corresponding buffer node for the user*/
 	targetBufferNode = NULL;
 	findOrCreateBufferNode_(userID, targetBufferNode);	
+	//找到user对应的peruserbuffernode
 
 	while (shareMDBufferOffset < shareMDSize) {
+		//偏移量小于metabuffer大小时 即读取所有
 		/*1. read the file share metadata head and file name*/
 
 		/*read the file share metadata head*/
 		pFileShareMDHead = (fileShareMDHead_t *) (shareMDBuffer + shareMDBufferOffset);
 		shareMDBufferOffset += fileShareMDHeadSize_;		
+		//保存一个fileshareheader
+		//将指针移到data 
 
 		/*read the file name with null-terminator*/
 		fullFileName.assign((char *) (shareMDBuffer + shareMDBufferOffset), pFileShareMDHead->fullNameSize);
 		shareMDBufferOffset += pFileShareMDHead->fullNameSize;
+		//读取此metabuffer对应的文件名
+		//指针移到第一个sharehead
+
 		/*format fullFileName before using it*/
 		if (!formatFullFileName_(fullFileName)) {
 			fprintf(stderr, "Error: encounter an invalid fullFileName!\n");
 
 			return 0;
-		}	
+		}
+		//将文件名修改为对应的路径
 
 		/*2. make sure the recipe file buffer has enough space for storing the coming file recipe head and entries*/
 
+		//先查询目前的recipe 缓存 buffer
+
 		/*if this is a new file*/
+
+		//加长或者新建 recipe file 
+		//修改recipeFileBufferCurrLen加长num of coming secrets个file entry长度
+
 		if (pFileShareMDHead->numOfPastSecrets == 0) {
 			recipeFileBufferAddedLen = fileRecipeHeadSize_ + 
 				fileRecipeEntrySize_ * (pFileShareMDHead->numOfComingSecrets);
 		}
+		//新建一个（如果是新的文件）
+
 		/*if this is the remain of a previous file*/
+
+		//如果此文件是之前文件的剩余部分
+
 		else {
 			/*if the buffer is empty, we also need a file recipe head*/
 			if (targetBufferNode->recipeFileBufferCurrLen == 0) {
 				recipeFileBufferAddedLen = fileRecipeHeadSize_ + 
-					fileRecipeEntrySize_ * (pFileShareMDHead->numOfComingSecrets);		
+					fileRecipeEntrySize_ * (pFileShareMDHead->numOfComingSecrets);	
 			}
 			/*otherwise, the buffer should already store the file recipe head*/
 			else {
@@ -1913,18 +1967,33 @@ bool DedupCore::secondStageDedup(const int &userID, unsigned char *shareMDBuffer
 			}			
 		}
 
+		//计算addlen需要伸长多长的buffer
+
+		//扩充已有recipebuffer长度
+
 		/*if there is no enough space in the recipe file buffer, store the data of the buffer into the disk*/
 		if (targetBufferNode->recipeFileBufferCurrLen + recipeFileBufferAddedLen > RECIPE_BUFFER_SIZE) {
 			/*read the last recipe head*/
 			pFileRecipeHead = (fileRecipeHead_t *) (targetBufferNode->recipeFileBuffer + 
 					targetBufferNode->lastRecipeHeadPos);
 
+			//读取buffer中上一个recipehead的位置
+
+
+
+
 			/*if (a) the last recipe head is at the beginning of the buffer and 
 			  (b) the first recipe entry has been stored in a previous recipe file*/
 			if ((targetBufferNode->lastRecipeHeadPos == 0) && 
 					(pFileShareMDHead->numOfPastSecrets > pFileRecipeHead->numOfShares)) {
+
+				//如果最新的head在此buffer的头部 且 metadata中的filehead中的已传输的chunks数量大于在此模块的head中记录的share（即已有chunk被储存了）
+				//
+				//
 				/*since pFileShareMDHead->numOfPastSecrets > 0, the coming shares are for the same fullFileName*/
 				if (!appendOldRecipeFile_(targetBufferNode, recipeFileName)) {
+					//附加到旧的recipe里
+					//
 					fprintf(stderr, "Error: fail to append the data of the recipe file buffer to a previous recipe file!\n");
 
 					return 0;
@@ -1938,8 +2007,13 @@ bool DedupCore::secondStageDedup(const int &userID, unsigned char *shareMDBuffer
 				}
 			}
 
+
+
+
+
 			/*if a new file starts, then the previous file has been finished*/
 			if (pFileShareMDHead->numOfPastSecrets == 0) {
+				//如果传入的filehead是新文件 则关闭旧文件 开启新recipefile
 				if (recipeStorerObj_ != NULL) {
 					recipeStorerObj_->addNewFile(recipeFileName);
 				}
@@ -2182,6 +2256,7 @@ bool DedupCore::cleanupAllBufferNodes() {
  */
 bool DedupCore::restoreShareFile(const int &userID, const std::string &fullFileName, const int &versionNumber, 
 		int socketFD, CryptoPrimitive *cryptoObj) {
+	//user, fullFileName, 0, *clientSock, hashObj
 	leveldb::Status inodeStat, shareStat;
 	std::string formatedFullFileName;
 	char FP[FP_SIZE];		

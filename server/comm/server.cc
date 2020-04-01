@@ -27,6 +27,8 @@ Server::Server(int port, DedupCore* dedupObj){
 
 	//server socket initialization
 	hostSock_ = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+	//AF_INET为ipv4地址，SOCK_STREAM为面向连接套接字，IPPROTO_TCP为TCP
+	//返回一个int来表示socket
 	if (hostSock_ == -1){
 		printf("Error initializing socket %d\n", errno);
 	}
@@ -47,16 +49,19 @@ Server::Server(int port, DedupCore* dedupObj){
 
 	memset(&(myAddr_.sin_zero),0,8);
 	myAddr_.sin_addr.s_addr = INADDR_ANY;
+	//设置socket的配置
 
 	//bind port
 	if(bind(hostSock_, (sockaddr*)&myAddr_, sizeof(myAddr_)) == -1){
 		fprintf(stderr, "Error binding to socket %d\n", errno);
 	}
+	//捆绑端口与socket
 
 	//start to listen
 	if(listen(hostSock_, 10) == -1){
 		fprintf(stderr, "Error listening %d\n", errno);
 	}
+	//设置为被动连接服务器 最大长度为10
 }
 
 void timerStart(double *t){
@@ -99,10 +104,11 @@ void* SocketHandler(void* lp){
 	
 
 	//get user ID
+	//recv函数从TCP连接socks接收int长的数据存储到buffer，第四个参数置0
 	if ((bytecount = recv(*clientSock, buffer, sizeof(int), 0)) == -1){
 		fprintf(stderr, "Error recv userID %d\n",errno);
 	}
-	user= ntohl(*(int*)buffer);
+	user= ntohl(*(int*)buffer);//nothl将一个无符号长整形数从网络字节顺序转换为主机字节顺序，返回一个以主机字节顺序表达的数
 
 	memset(buffer, 0, BUFFER_LEN);
 	int numOfShare = 0;
@@ -117,6 +123,7 @@ void* SocketHandler(void* lp){
 		if((bytecount = recv(*clientSock, buffer, sizeof(int), 0)) == -1){
 			fprintf(stderr, "Error receiving data %d\n", errno);
 		}
+		//监听端口等待 指示符
 
 		/*if client closes, break loop*/
 		if(bytecount == 0) break;
@@ -138,6 +145,7 @@ void* SocketHandler(void* lp){
 			}
 			count += bytecount;
 		}
+		//将文件接收 存储到buffer中
 
 		/*while metadata recv.ed, perform first stage deduplication*/
 		if (indicator == META){
@@ -146,6 +154,7 @@ void* SocketHandler(void* lp){
 
 			//timerStart(&timer);
 			dedupObj_->firstStageDedup(user,(unsigned char*)metaBuffer, count, statusList, numOfShare, dataSize);
+			//user为上面的id metabuffer为传上来的数据 count是数据大小 statuslist是返回的bool值列表 numofshare是statuslist的数量 datasize是应送的data大小
 			//split = timerSplit(&timer);
 			//first_total+= split;
 
@@ -157,11 +166,13 @@ void* SocketHandler(void* lp){
 			if ((bytecount = send(*clientSock, buffer, sizeof(int), 0)) == -1){
 				fprintf(stderr, "Error sending data %d\n", errno);
 			}
+			//发送STAT表示可以进行下一步了
 
 			memcpy(buffer,&numOfShare, sizeof(int));
 			if ((bytecount = send(*clientSock, buffer, sizeof(int), 0)) == -1){
 				fprintf(stderr, "Error sending data %d\n", errno);
 			}
+			//发送share总数
 
 			if ((bytecount = send(*clientSock, statusList, sizeof(bool)*numOfShare, 0)) == -1){
 				fprintf(stderr, "Error sending data %d\n", errno);
@@ -180,6 +191,7 @@ void* SocketHandler(void* lp){
 		if(indicator == DOWNLOAD){
 			std::string fullFileName;
 			fullFileName.assign(buffer, count);
+			//收到指示符/文件大小/文件名 即init download
 			dedupObj_->restoreShareFile(user, fullFileName, 0, *clientSock, hashObj);
 
 		}
@@ -208,8 +220,10 @@ void Server::runReceive(){
 		printf("waiting for a connection\n");
 		clientSock_ = (int*)malloc(sizeof(int));
 		if((*clientSock_ = accept(hostSock_, (sockaddr*)&sadr_, &addrSize_))!= -1){
+			//在等待队列中创建连接
 			printf("Received connection from %s\n", inet_ntoa(sadr_.sin_addr));
 			pthread_create(&threadId_, 0, &SocketHandler, (void*)clientSock_);
+			//开启通讯
 			pthread_detach(threadId_);
 		}
 		else{
