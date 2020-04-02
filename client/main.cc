@@ -37,12 +37,30 @@ void usage(char *s){
 
 int main(int argc, char *argv[]){
     /* argument test 测试是否满参数 */
-    if (argc != 5) usage(NULL);
+    //if (argc != 5) usage(NULL);
 
     /* get options 将参数导入 */
-    int userID = atoi(argv[2]);
+    
+    /*int userID = atoi(argv[2]);
     char* opt = argv[3];
-    char* securesetting = argv[4];
+    char* securesetting = argv[4];*/
+
+    char*  filename = new char [100] ;
+    int userID ;
+    char* opt = new char [10];
+    char* securesetting  = new char [10];
+    printf("fiename");
+    cin>>filename;
+    printf("userid");
+    cin>>userID;
+    printf("opt");
+    cin>>opt;
+    printf("secure");
+    cin>>securesetting;
+
+
+
+
 
     /* read file 读取 */
 
@@ -89,7 +107,7 @@ int main(int argc, char *argv[]){
 
     /* full file name process 检测文件名长度 */
     int namesize = 0;
-    while(argv[1][namesize] != '\0'){
+    while(filename[namesize] != '\0'){
         namesize++;
     }
     namesize++;
@@ -100,7 +118,7 @@ int main(int argc, char *argv[]){
 
     if (strncmp(opt,"-u",2) == 0 || strncmp(opt, "-a", 2) == 0){//如果方式是upload或者a的话
 
-        FILE * fin = fopen(argv[1],"r");
+        FILE * fin = fopen(filename,"r");
 
         /* get file size 取得文件大小 */
         fseek(fin,0,SEEK_END);
@@ -114,14 +132,14 @@ int main(int argc, char *argv[]){
         Encoder::Secret_Item_t header;//生成secret头 一个文件只有一个 header 此处作为union中的header使用 保存整个文件的概述
         //data中是文件名 namesize中是文件名所占空间数 size是文件所占空间数
         header.type = 1;
-        memcpy(header.file_header.data, argv[1], namesize);
+        memcpy(header.file_header.data, filename, namesize);
         header.file_header.fullNameSize = namesize;
         header.file_header.fileSize = size;
 
 
         // do encode
         encoderObj->add(&header);//将header部分加入encoder
-        //uploaderObj->generateMDHead(0,size,(unsigned char*) argv[1],namesize,n,0,0,0,0);
+        //uploaderObj->generateMDHead(0,size,(unsigned char*) filename,namesize,n,0,0,0,0);
 
         long total = 0;
         int totalChunks = 0;
@@ -167,13 +185,13 @@ int main(int argc, char *argv[]){
         decoderObj = new Decoder(CAONT_RS_TYPE, n, m, r, securetype);
         downloaderObj = new Downloader(k,k,userID,decoderObj);
         char nameBuffer[256];
-        sprintf(nameBuffer,"%s.d",argv[1]);
+        sprintf(nameBuffer,"%s.d",filename);
         FILE * fw = fopen(nameBuffer,"wb");
 
         decoderObj->setFilePointer(fw);
         decoderObj->setShareIDList(kShareIDList);
 
-        downloaderObj->downloadFile(argv[1], namesize, k);
+        downloaderObj->downloadFile(filename, namesize, k);
         decoderObj->indicateEnd();
 
         fclose(fw);
