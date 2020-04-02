@@ -4,11 +4,11 @@
  */
 
 #include "encoder.hh"
-
+#include "uploader.hh"
 using namespace std;
 
 /*
- * thread handler for encoding each secret into shares
+ * thread handler for encoding each chunkObj.chunk_header into shares
  *
  * @param param - parameters for encode thread
  */
@@ -23,8 +23,8 @@ void* Encoder::thread_handler(void* param){//此处的param拥有一个index和o
     while(true){//线程的主要循环
 
         /* get an object from input buffer */
-        Secret_Item_t tempENCODEchunk;
-        ShareChunk_Item_t input;
+        Uploader::Item_t tempENCODEchunk;
+        Uploader::Item_t input;
         obj->inputbuffer_[index]->Extract(&tempENCODEchunk);//从ADD函数中提取出当前线程对应循环buffer中的secret_item放到tempchunk文件中（即小的chunks）
         //在这个局部中的temp即为
         /* get the object type */
@@ -34,18 +34,18 @@ void* Encoder::thread_handler(void* param){//此处的param拥有一个index和o
         /* copy content into input object */
         if(type == FILE_OBJECT){
             /* if it's file header */
-            memcpy(&input.file_header, &tempENCODEchunk.file_header, sizeof(fileHead_t));//如果是则将头文件大小的数据copy到sharechunk_item input中 union结构相同
+            memcpy(&input.fileObj.file_header, &tempENCODEchunk.fileObj.file_header, sizeof(Uploader::fileMDHead_t));//如果是则将头文件大小的数据copy到sharechunk_item input中 union结构相同
         }
         else
         {
             /* if it's share object */
-            obj->encodeObj_[index]->encoding(tempENCODEchunk.secret.data, tempENCODEchunk.secret.secretSize, input.share_chunk.data, &(input.share_chunk.shareSize));
+            obj->encodeObj_[index]->encoding(tempENCODEchunk.chunkObj.data, tempENCODEchunk.chunkObj.chunk_header.secretSize, input.chunkObj.data, &(input.chunkObj.chunk_header.shareSize));
             //encodeObj为CDCodec模块 这是第INDEX个线程 在CDcodec.hh中默认将加密方式设为CANT-OS。
-            input.share_chunk.secretID = tempENCODEchunk.secret.secretID;
-            input.share_chunk.secretSize = tempENCODEchunk.secret.secretSize;//多了一个share文件的大小shareSize 同时data转变为了n份的
+            input.chunkObj.chunk_header.secretID = tempENCODEchunk.chunkObj.chunk_header.secretID;
+            input.chunkObj.chunk_header.secretSize = tempENCODEchunk.chunkObj.chunk_header.secretSize;//多了一个share文件的大小shareSize 同时data转变为了n份的
             //sharesize表示的是每个share的大小，共n个
             //encoding方法在CDCode.cc中
-            input.share_chunk.end = tempENCODEchunk.secret.end;//这四步将属于源secret转变为share文件
+            input.chunkObj.chunk_header.end = tempENCODEchunk.chunkObj.chunk_header.end;//这四步将属于源secret转变为share文件
             //可以从这里修改成为普通的加密，不需要秘密共享
         }
 
@@ -71,7 +71,7 @@ void* Encoder::collect(void* param){//传参为此encoder的指针
     while(true){//循环
 
         /* extract an object from a certain ringbuffer */
-        ShareChunk_Item_t temp;
+        Uploader::Item_t temp;
         obj->outputbuffer_[nextBufferIndex]->Extract(&temp);//将thread Encode完成的秘密chunk导出到temp
         nextBufferIndex = (nextBufferIndex + 1)%NUM_THREADS;//轮流从每一个encode线程的output中取出一个chunk
 
@@ -83,25 +83,25 @@ void* Encoder::collect(void* param){//传参为此encoder的指针
         if(type == FILE_OBJECT){
 
             /* if it's file header, directly transform the object to uploader */
-            input.type = FILE_HEADER;
+            input.type =FILE_HEADER;// -9
 
             /* copy file header information */
-            input.fileObj.file_header.fileSize = temp.file_header.fileSize;
+            input.fileObj.file_header.fileSize = temp.fileObj.file_header.fileSize;
             input.fileObj.file_header.numOfPastSecrets = 0;
             input.fileObj.file_header.sizeOfPastSecrets = 0;
             input.fileObj.file_header.numOfComingSecrets = 0;
             input.fileObj.file_header.sizeOfComingSecrets = 0;
             
-            unsigned char tmp[temp.file_header.fullNameSize*32];
+            unsigned char tmp[temp.fileObj.file_header.fullNameSize*32];
             int tmp_s;
 
             //encode pathname into shares for privacy
-            obj->encodeObj_[0]->encoding(temp.file_header.data, temp.file_header.fullNameSize, tmp, &(tmp_s));//用pid=0的线程加密
+            obj->encodeObj_[0]->encoding(temp.fileObj.data, temp.fileObj.file_header.fullNameSize, tmp, &(tmp_s));//用pid=0的线程加密
             
             input.fileObj.file_header.fullNameSize = tmp_s;//保存加密后的文件名大小
 
             /* copy file name 如果直接使用复制不加密 */
-            //memcpy(input.fileObj.data, temp.file_header.data, temp.file_header.fullNameSize);
+            //memcpy(input.fileObj.data, temp.fileObj.file_header.data, temp.fileObj.file_header.fullNameSize);
 
 #ifndef ENCODE_ONLY_MODE
             /* add the object to each cloud's uploader buffer */
@@ -119,17 +119,17 @@ void* Encoder::collect(void* param){//传参为此encoder的指针
                 input.type = SHARE_OBJECT;
 
                 /* copy share info */	
-                int shareSize = temp.share_chunk.shareSize;
-                input.shareObj.share_header.secretID = temp.share_chunk.secretID;
-                input.shareObj.share_header.secretSize = temp.share_chunk.secretSize;
-                input.shareObj.share_header.shareSize = shareSize;
-                memcpy(input.shareObj.data, temp.share_chunk.data+(i*shareSize), shareSize);//从share_chunk.data+(i*shareSize)中每隔sharesize取出一个share储存到shareobj.data中
+                int shareSize = temp.chunkObj.chunk_header.shareSize;
+                input.chunkObj.chunk_header.secretID = temp.chunkObj.chunk_header.secretID;
+                input.chunkObj.chunk_header.secretSize = temp.chunkObj.chunk_header.secretSize;
+                input.chunkObj.chunk_header.shareSize = shareSize;
+                memcpy(input.chunkObj.data, temp.chunkObj.data+(i*shareSize), shareSize);//从share_chunk.data+(i*shareSize)中每隔sharesize取出一个share储存到chunkObj.data中
 #ifndef ENCODE_ONLY_MODE
 #endif
-                /* see if it's the last secret of a file */
-                if (temp.share_chunk.end == 1) input.type = SHARE_END;
+                /* see if it's the last chunkObj.chunk_header of a file */
+                if (temp.chunkObj.chunk_header.end == 1) input.type = SHARE_END;
 #ifdef ENCODE_ONLY_MODE
-                if (temp.share_chunk.end == 1) pthread_exit(NULL);
+                if (temp.chunkObj.chunk_header.end == 1) pthread_exit(NULL);
 #else 
                 /* add the share object to targeting cloud uploader buffer */
                 obj->uploadObj_->add(&input, sizeof(input), i);
@@ -153,7 +153,7 @@ void Encoder::indicateEnd(){//维持 看是否线程已经运行完毕
  * constructor
  *    
  * @param type - convergent dispersal type
- * @param n - total number of shares generated from a secret
+ * @param n - total number of shares generated from a chunkObj.chunk_header
  * @param m - reliability degree
  * @param r - confidentiality degree
  * @param securetype - encryption and hash type
@@ -167,13 +167,13 @@ Encoder::Encoder(int type, int n, int m, int r, int securetype, Uploader* upload
     n_ = n;
     nextAddIndex_ = 0;
     cryptoObj_ = (CryptoPrimitive**)malloc(sizeof(CryptoPrimitive*)*NUM_THREADS);
-    inputbuffer_ = (RingBuffer<Secret_Item_t>**)malloc(sizeof(RingBuffer<Secret_Item_t>*)*NUM_THREADS);
-    outputbuffer_ = (RingBuffer<ShareChunk_Item_t>**)malloc(sizeof(RingBuffer<ShareChunk_Item_t>*)*NUM_THREADS);
+    inputbuffer_ = (RingBuffer<Uploader::Item_t>**)malloc(sizeof(RingBuffer<Uploader::Item_t>*)*NUM_THREADS);
+    outputbuffer_ = (RingBuffer<Uploader::Item_t>**)malloc(sizeof(RingBuffer<Uploader::Item_t>*)*NUM_THREADS);
 
     /* initialization of objects */
     for (i = 0; i < NUM_THREADS; i++){//以i为循环NUM_THEARDS个线程 从0到NUM-1
-        inputbuffer_[i] = new RingBuffer<Secret_Item_t>(RB_SIZE, true, 1);
-        outputbuffer_[i] = new RingBuffer<ShareChunk_Item_t>(RB_SIZE, true, 1);
+        inputbuffer_[i] = new RingBuffer<Uploader::Item_t>(RB_SIZE, true, 1);
+        outputbuffer_[i] = new RingBuffer<Uploader::Item_t>(RB_SIZE, true, 1);
         cryptoObj_[i] = new CryptoPrimitive(securetype);//加密模块生成
         encodeObj_[i] = new CDCodec(type,n,m,r, cryptoObj_[i]);//编码模块初始化
         //在这里生成了函数中需要的encodeObj 是CDCodec类
@@ -213,9 +213,9 @@ Encoder::~Encoder(){
  * @param item - input object
  *
  */
-int Encoder::add(Secret_Item_t* item){
+int Encoder::add(Uploader::Item_t* item){
     /* add item */
-    inputbuffer_[nextAddIndex_]->Insert(item, sizeof(Secret_Item_t));//向循环buffer区中添加新部分供线程使用
+    inputbuffer_[nextAddIndex_]->Insert(item, sizeof(Uploader::Item_t));//向循环buffer区中添加新部分供线程使用
 
     /* increment the index */
     nextAddIndex_ = (nextAddIndex_+1)%NUM_THREADS;

@@ -81,10 +81,10 @@ class Encoder{
         }ShareChunk_Item_t;
 
         /* the input secret ringbuffer */
-        RingBuffer<Secret_Item_t>** inputbuffer_;
+        RingBuffer<Uploader::Item_t>** inputbuffer_;
 
         /* the output share ringbuffer */
-        RingBuffer<ShareChunk_Item_t>** outputbuffer_;
+        RingBuffer<Uploader::Item_t>** outputbuffer_;
 
         /* thread id array */
         pthread_t tid_[NUM_THREADS+1];
@@ -138,7 +138,7 @@ class Encoder{
          *
          * @param item - input object
          */
-        int add(Secret_Item_t* item);
+        int add(Uploader::Item_t* item);
 
         /*
          * thread handler for encoding secret into shares

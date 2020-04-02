@@ -37,7 +37,7 @@ void* Uploader::thread_handler(void* param) {
                 &(output.fileObj.file_header), obj->fileMDHeadSize_);//向uploadMetaBuffer中添加item的fileheader部分（类型为fileshare_mdhead）
 
         /* head array point to new file header */
-            obj->headerArray_[cloudIndex] = (fileShareMDHead_t*)(obj->uploadMetaBuffer_[cloudIndex] + obj->metaWP_[cloudIndex]);//headerarray加入了一个file_header
+            obj->headerArray_[cloudIndex] = (fileMDHead_t*)(obj->uploadMetaBuffer_[cloudIndex] + obj->metaWP_[cloudIndex]);//headerarray加入了一个file_header
 
             /* meta index update */
             obj->metaWP_[cloudIndex] += obj->fileMDHeadSize_;//更新下一次向uploadMetaBuffer添加时的指针 
@@ -51,7 +51,7 @@ void* Uploader::thread_handler(void* param) {
         }
         else if (output.type == SHARE_OBJECT || output.type == SHARE_END) {
             /* IF this is share object */
-            int shareSize = output.shareObj.share_header.shareSize;
+            int shareSize = output.chunkObj.chunk_header.shareSize;
 
             /* see if the container buffer can hold the coming share, if not then perform upload */
             if (shareSize + obj->containerWP_[cloudIndex] > UPLOAD_BUFFER_SIZE) {
@@ -60,14 +60,14 @@ void* Uploader::thread_handler(void* param) {
             }
 
             /* generate SHA256 fingerprint */
-            hashobj->generateHash((unsigned char*)output.shareObj.data, shareSize, output.shareObj.share_header.shareFP);
+            hashobj->generateHash((unsigned char*)output.chunkObj.data, shareSize, output.chunkObj.chunk_header.shareFP);
 
             /* copy share header into metabuffer */
-            memcpy(obj->uploadMetaBuffer_[cloudIndex] + obj->metaWP_[cloudIndex], &(output.shareObj.share_header), obj->shareMDEntrySize_);//header部分压入buffer
-            obj->metaWP_[cloudIndex] += obj->shareMDEntrySize_;
+            memcpy(obj->uploadMetaBuffer_[cloudIndex] + obj->metaWP_[cloudIndex], &(output.chunkObj.chunk_header), obj->chunkMDeadSize_);//header部分压入buffer
+            obj->metaWP_[cloudIndex] += obj->chunkMDeadSize_;
 
             /* copy share data into container buffer */
-            memcpy(obj->uploadContainer_[cloudIndex] + obj->containerWP_[cloudIndex], output.shareObj.data, shareSize);//data部分压入container
+            memcpy(obj->uploadContainer_[cloudIndex] + obj->containerWP_[cloudIndex], output.chunkObj.data, shareSize);//data部分压入container
             obj->containerWP_[cloudIndex] += shareSize;
 
             /* record share size */
@@ -76,7 +76,7 @@ void* Uploader::thread_handler(void* param) {
 
             /* update file header pointer */
             obj->headerArray_[cloudIndex]->numOfComingSecrets += 1;
-            obj->headerArray_[cloudIndex]->sizeOfComingSecrets += output.shareObj.share_header.secretSize;
+            obj->headerArray_[cloudIndex]->sizeOfComingSecrets += output.chunkObj.chunk_header.secretSize;
 
             /* IF this is the last share object, perform upload and exit thread */
             if (output.type == SHARE_END) {
@@ -108,7 +108,7 @@ Uploader::Uploader(int total, int subset, int userID) {//在main.cc中 默认为
     metaWP_ = (int*)malloc(sizeof(int) * total_);
     numOfShares_ = (int*)malloc(sizeof(int) * total_);
     socketArray_ = (Socket**)malloc(sizeof(Socket*) * total_);
-    headerArray_ = (fileShareMDHead_t**)malloc(sizeof(fileShareMDHead_t*) * total_);
+    headerArray_ = (fileMDHead_t**)malloc(sizeof(fileMDHead_t*) * total_);
     shareSizeArray_ = (int**)malloc(sizeof(int*) * total_);
 
 
@@ -146,8 +146,8 @@ Uploader::Uploader(int total, int subset, int userID) {//在main.cc中 默认为
     }
 
     fclose(fp);
-    fileMDHeadSize_ = sizeof(fileShareMDHead_t);
-    shareMDEntrySize_ = sizeof(shareMDEntry_t);
+    fileMDHeadSize_ = sizeof(fileMDHead_t);
+    chunkMDeadSize_ = sizeof(chunkMDhead_t);
 
 }
 

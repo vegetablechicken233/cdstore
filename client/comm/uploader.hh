@@ -85,7 +85,7 @@ class Uploader{
             long sizeOfPastSecrets;
             int numOfComingSecrets;
             long sizeOfComingSecrets;
-        }fileShareMDHead_t;
+        }fileMDHead_t;
 
         /* share metadata header structure */
         typedef struct {
@@ -93,26 +93,27 @@ class Uploader{
             int secretID;
             int secretSize;
             int shareSize;
-        } shareMDEntry_t;
+            int end;
+        } chunkMDhead_t;
 
         /* file header object struct for ringbuffer */
         typedef struct{
-            fileShareMDHead_t file_header;
+            fileMDHead_t file_header;
             unsigned char data[RING_BUFFER_DATA_SIZE];
         }fileHeaderObj_t;
 
         /* share header object struct for ringbuffer */
         typedef struct{
-            shareMDEntry_t share_header;
+            chunkMDhead_t chunk_header;
             unsigned char data[RING_BUFFER_DATA_SIZE];
-        }shareHeaderObj_t;
+        }ChunkObj_t;
 
         /* union of objects for unifying ringbuffer objects */
         typedef struct{
             int type;
             union{
                 fileHeaderObj_t fileObj;
-                shareHeaderObj_t shareObj;
+                ChunkObj_t chunkObj;
             };
         }Item_t;
 
@@ -123,7 +124,7 @@ class Uploader{
         }param_t;
 
         /* file header pointer array for modifying header */
-        fileShareMDHead_t ** headerArray_;
+        fileMDHead_t ** headerArray_;
 
         /* socket array */
         Socket** socketArray_;
@@ -150,7 +151,7 @@ class Uploader{
         int fileMDHeadSize_;
 
         /* size of share metadata header */
-        int shareMDEntrySize_;
+        int chunkMDeadSize_;
 
         /* thread id array */
         pthread_t tid_[UPLOAD_NUM_THREADS];

@@ -101,9 +101,14 @@ int main(int argc, char *argv[]){
     secretBuffer = (unsigned char*)malloc(sizeof(unsigned char) * secretBufferSize);
     shareBuffer = (unsigned char*)malloc(sizeof(unsigned char) * shareBufferSize);//分配内存空间
 
+
+
+
     /* initialize share ID list 生成share ID 的列表 */
     kShareIDList = (int*)malloc(sizeof(int)*k);
     for (i = 0; i < k; i++) kShareIDList[i] = i;
+
+
 
     /* full file name process 检测文件名长度 */
     int namesize = 0;
@@ -112,9 +117,18 @@ int main(int argc, char *argv[]){
     }
     namesize++;
 
+
+
+
+
+
     /* parse secure parameters */
     int securetype = LOW_SEC_PAIR_TYPE;
     if(strncmp(securesetting,"HIGH", 4) == 0) securetype = HIGH_SEC_PAIR_TYPE;//根据参数选择加密方式
+
+
+
+
 
     if (strncmp(opt,"-u",2) == 0 || strncmp(opt, "-a", 2) == 0){//如果方式是upload或者a的话
 
@@ -124,22 +138,38 @@ int main(int argc, char *argv[]){
         fseek(fin,0,SEEK_END);
         long size = ftell(fin);	
         fseek(fin,0,SEEK_SET);
+
+
         uploaderObj = new Uploader(n,n,userID);
+
+
         encoderObj = new Encoder(CAONT_RS_TYPE, n, m, r, securetype, uploaderObj);//此处已经开始运行两个线程 分别是encode和upload
+
+
+
         chunkerObj = new Chunker(VAR_SIZE_TYPE);//三个主要模块的生成
+
+
+
         //chunking
         //
-        Encoder::Secret_Item_t header;//生成secret头 一个文件只有一个 header 此处作为union中的header使用 保存整个文件的概述
+        Uploader::Item_t fileheader;//生成secret头 一个文件只有一个 header 此处作为union中的header使用 保存整个文件的概述
         //data中是文件名 namesize中是文件名所占空间数 size是文件所占空间数
-        header.type = 1;
-        memcpy(header.file_header.data, filename, namesize);
-        header.file_header.fullNameSize = namesize;
-        header.file_header.fileSize = size;
+        fileheader.type = 1;
+        memcpy(fileheader.fileObj.data, filename, namesize);
+        fileheader.fileObj.file_header.fullNameSize = namesize;
+        fileheader.fileObj.file_header.fileSize = size;
+
+        //Encoder::Secret_Item_t inpu;
+
 
 
         // do encode
-        encoderObj->add(&header);//将header部分加入encoder
+        encoderObj->add(&fileheader);//将header部分加入encoder
         //uploaderObj->generateMDHead(0,size,(unsigned char*) filename,namesize,n,0,0,0,0);
+
+
+
 
         long total = 0;
         int totalChunks = 0;
@@ -150,18 +180,41 @@ int main(int argc, char *argv[]){
             int count = 0;
             int preEnd = -1;
             while(count < numOfChunks){
-                Encoder::Secret_Item_t input;
+
+
+                Uploader::Item_t input;
                 input.type = 0;
-                input.secret.secretID = totalChunks;//ID表示是第几个chunk，初始为0
-                input.secret.secretSize = chunkEndIndexList[count] - preEnd;//计算出当前块的大小
-                memcpy(input.secret.data, buffer+preEnd+1, input.secret.secretSize);//将buffer按从buffer+preEnd+1开始读一个chunk大小取到secret data中
-                if(memcmp(input.secret.data, tmp, input.secret.secretSize) == 0){
-                    zero += input.secret.secretSize;//???
+                input.chunkObj.chunk_header.secretID = totalChunks;//ID表示是第几个chunk，初始为0
+                input.chunkObj.chunk_header.secretSize = chunkEndIndexList[count] - preEnd;//计算出当前块的大小
+                memcpy(input.chunkObj.data, buffer+preEnd+1, input.chunkObj.chunk_header.secretSize);//将buffer按从buffer+preEnd+1开始读一个chunk大小取到secret data中
+                
+                
+                if(memcmp(input.chunkObj.data, tmp, input.chunkObj.chunk_header.secretSize) == 0){
+                    zero += input.chunkObj.chunk_header.secretSize;//???
+
+
+                
                 }
 
-                input.secret.end = 0;
-                if(total+ret == size && count+1 == numOfChunks) input.secret.end = 1;//如果chunks全部输入完毕则 end=1
+
+
+                input.chunkObj.chunk_header.end = 0;
+
+
+                if(total+ret == size && count+1 == numOfChunks) input.chunkObj.chunk_header.end = 1;
+                //如果chunks全部输入完毕则 end=1
+
+
+
+            
+
                 encoderObj->add(&input);//将当前input 加入到encoder模组
+                //int Uploader::add(Item_t* item, int size, int index) 
+                //uploaderObj->add(&input,,0);
+
+
+
+
                 totalChunks++;
                 preEnd = chunkEndIndexList[count];//更新下一次计算chunk大小的起点
                 count++;
@@ -188,11 +241,18 @@ int main(int argc, char *argv[]){
         sprintf(nameBuffer,"%s.d",filename);
         FILE * fw = fopen(nameBuffer,"wb");
 
+
+
+
         decoderObj->setFilePointer(fw);
         decoderObj->setShareIDList(kShareIDList);
 
         downloaderObj->downloadFile(filename, namesize, k);
         decoderObj->indicateEnd();
+
+
+
+
 
         fclose(fw);
         delete downloaderObj;
