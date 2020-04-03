@@ -46,24 +46,27 @@ void CryptoPrimitive::opensslThreadID_(CRYPTO_THREADID *id) {
  */
 bool CryptoPrimitive::opensslLockSetup() {
 #if defined(OPENSSL_THREADS)
-	fprintf(stderr,"OpenSSL lock setup started\n");
+	//fprintf(stderr,"OpenSSL lock setup started\n");
 
 	opensslLock_ = (opensslLock_t *) malloc(sizeof(opensslLock_t));
 
 	opensslLock_->lockList = (pthread_mutex_t *) OPENSSL_malloc(CRYPTO_num_locks() * sizeof(pthread_mutex_t));
 	opensslLock_->cntList = (long *) OPENSSL_malloc(CRYPTO_num_locks() * sizeof(long));
 
-	fprintf(stderr,"cntList[i]:CRYPTO_get_lock_name(i)\n");
+	//fprintf(stderr,"cntList[i]:CRYPTO_get_lock_name(i)\n");
+	printf("建立OPENSSL LOCK\n");
 	for (int i = 0; i < CRYPTO_num_locks(); i++) {
 		pthread_mutex_init(&(opensslLock_->lockList[i]), NULL);
 		opensslLock_->cntList[i] = 0;
-		fprintf(stderr,"%8ld:%s\n", opensslLock_->cntList[i], CRYPTO_get_lock_name(i));
+		
+		//fprintf(stderr,"%8ld:%s\n", opensslLock_->cntList[i], CRYPTO_get_lock_name(i));
 	}
+	printf("OPENSSL LOCK建立完毕！\n");
 
 	CRYPTO_THREADID_set_callback(&opensslThreadID_);
 	CRYPTO_set_locking_callback(&opensslLockingCallback_);
 
-	fprintf(stderr,"OpenSSL lock setup done\n");
+	//fprintf(stderr,"OpenSSL lock setup done\n");
 
 	return 1;
 #else
@@ -82,19 +85,22 @@ bool CryptoPrimitive::opensslLockCleanup() {
 #if defined(OPENSSL_THREADS)
 	CRYPTO_set_locking_callback(NULL);
 
-	fprintf(stderr,"OpenSSL lock cleanup started\n");
+	//fprintf(stderr,"OpenSSL lock cleanup started\n");
 
-	fprintf(stderr,"cntList[i]:CRYPTO_get_lock_name(i)\n");
+	//fprintf(stderr,"cntList[i]:CRYPTO_get_lock_name(i)\n");
+	printf("准备清理OPENSSL LOCK\n");
 	for (int i = 0; i < CRYPTO_num_locks(); i++) {
 		pthread_mutex_destroy(&(opensslLock_->lockList[i]));
-		fprintf(stderr,"%8ld:%s\n", opensslLock_->cntList[i], CRYPTO_get_lock_name(i));
+		
+		//fprintf(stderr,"%8ld:%s\n", opensslLock_->cntList[i], CRYPTO_get_lock_name(i));
 	}
+	printf("OPENSSL 清理完毕！\n");
 
 	OPENSSL_free(opensslLock_->lockList);
 	OPENSSL_free(opensslLock_->cntList);
 	free(opensslLock_);
 
-	fprintf(stderr,"OpenSSL lock cleanup done\n");
+	//fprintf(stderr,"OpenSSL lock cleanup done\n");
 
 	return 1;
 #else

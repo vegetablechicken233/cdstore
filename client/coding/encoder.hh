@@ -25,8 +25,8 @@
 /* object type indicators */
 #define FILE_OBJECT 1
 #define FILE_HEADER (-9)
-#define SHARE_OBJECT (-8)
-#define SHARE_END (-27)
+#define CHUNK_OBJECT (-8)
+#define CHUNK_END (-27)
 
 using namespace std;
 

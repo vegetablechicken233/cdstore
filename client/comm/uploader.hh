@@ -55,8 +55,8 @@
 
 /* object type indicators */
 #define FILE_HEADER (-9)
-#define SHARE_OBJECT (-8)
-#define SHARE_END (-27)
+#define CHUNK_OBJECT (-8)
+#define CHUNK_END (-27)
 
 using namespace std;
 
@@ -207,7 +207,7 @@ class Uploader{
          * @param index - the buffer index 
          *
          */
-        int add(Item_t* item, int size, int index);
+        int add(Item_t* item, int size);
 
         /*
          * procedure for update headers when upload finished

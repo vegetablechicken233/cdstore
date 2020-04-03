@@ -27,8 +27,8 @@ Server::Server(int port, DedupCore* dedupObj){
 
 	//server socket initialization
 	hostSock_ = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-	//AF_INETÎªipv4µØÖ·£¬SOCK_STREAMÎªÃæÏòÁ¬½ÓÌ×½Ó×Ö£¬IPPROTO_TCPÎªTCP
-	//·µ»ØÒ»¸öintÀ´±íÊ¾socket
+	//AF_INETÎªipv4ï¿½ï¿½Ö·ï¿½ï¿½SOCK_STREAMÎªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×½ï¿½ï¿½Ö£ï¿½IPPROTO_TCPÎªTCP
+	//ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½intï¿½ï¿½ï¿½ï¿½Ê¾socket
 	if (hostSock_ == -1){
 		printf("Error initializing socket %d\n", errno);
 	}
@@ -49,19 +49,19 @@ Server::Server(int port, DedupCore* dedupObj){
 
 	memset(&(myAddr_.sin_zero),0,8);
 	myAddr_.sin_addr.s_addr = INADDR_ANY;
-	//ÉèÖÃsocketµÄÅäÖÃ
+	//ï¿½ï¿½ï¿½ï¿½socketï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 
 	//bind port
 	if(bind(hostSock_, (sockaddr*)&myAddr_, sizeof(myAddr_)) == -1){
 		fprintf(stderr, "Error binding to socket %d\n", errno);
 	}
-	//À¦°ó¶Ë¿ÚÓësocket
+	//ï¿½ï¿½ï¿½ï¿½Ë¿ï¿½ï¿½ï¿½socket
 
 	//start to listen
 	if(listen(hostSock_, 10) == -1){
 		fprintf(stderr, "Error listening %d\n", errno);
 	}
-	//ÉèÖÃÎª±»¶¯Á¬½Ó·þÎñÆ÷ ×î´ó³¤¶ÈÎª10
+	//ï¿½ï¿½ï¿½ï¿½Îªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ó·ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ó³¤¶ï¿½Îª10
 }
 
 void timerStart(double *t){
@@ -104,11 +104,11 @@ void* SocketHandler(void* lp){
 	
 
 	//get user ID
-	//recvº¯Êý´ÓTCPÁ¬½Ósocks½ÓÊÕint³¤µÄÊý¾Ý´æ´¢µ½buffer£¬µÚËÄ¸ö²ÎÊýÖÃ0
+	//recvï¿½ï¿½ï¿½ï¿½ï¿½ï¿½TCPï¿½ï¿½ï¿½ï¿½socksï¿½ï¿½ï¿½ï¿½intï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ý´æ´¢ï¿½ï¿½bufferï¿½ï¿½ï¿½ï¿½ï¿½Ä¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½0
 	if ((bytecount = recv(*clientSock, buffer, sizeof(int), 0)) == -1){
 		fprintf(stderr, "Error recv userID %d\n",errno);
 	}
-	user= ntohl(*(int*)buffer);//nothl½«Ò»¸öÎÞ·ûºÅ³¤ÕûÐÎÊý´ÓÍøÂç×Ö½ÚË³Ðò×ª»»ÎªÖ÷»ú×Ö½ÚË³Ðò£¬·µ»ØÒ»¸öÒÔÖ÷»ú×Ö½ÚË³Ðò±í´ïµÄÊý
+	user= ntohl(*(int*)buffer);//nothlï¿½ï¿½Ò»ï¿½ï¿½ï¿½Þ·ï¿½ï¿½Å³ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö½ï¿½Ë³ï¿½ï¿½×ªï¿½ï¿½Îªï¿½ï¿½ï¿½ï¿½ï¿½Ö½ï¿½Ë³ï¿½ò£¬·ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö½ï¿½Ë³ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 
 	memset(buffer, 0, BUFFER_LEN);
 	int numOfShare = 0;
@@ -123,7 +123,7 @@ void* SocketHandler(void* lp){
 		if((bytecount = recv(*clientSock, buffer, sizeof(int), 0)) == -1){
 			fprintf(stderr, "Error receiving data %d\n", errno);
 		}
-		//¼àÌý¶Ë¿ÚµÈ´ý Ö¸Ê¾·û
+		//ï¿½ï¿½ï¿½ï¿½ï¿½Ë¿ÚµÈ´ï¿½ Ö¸Ê¾ï¿½ï¿½
 
 		/*if client closes, break loop*/
 		if(bytecount == 0) break;
@@ -145,7 +145,7 @@ void* SocketHandler(void* lp){
 			}
 			count += bytecount;
 		}
-		//½«ÎÄ¼þ½ÓÊÕ ´æ´¢µ½bufferÖÐ
+		//ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½æ´¢ï¿½ï¿½bufferï¿½ï¿½
 
 		/*while metadata recv.ed, perform first stage deduplication*/
 		if (indicator == META){
@@ -154,7 +154,7 @@ void* SocketHandler(void* lp){
 
 			//timerStart(&timer);
 			dedupObj_->firstStageDedup(user,(unsigned char*)metaBuffer, count, statusList, numOfShare, dataSize);
-			//userÎªÉÏÃæµÄid metabufferÎª´«ÉÏÀ´µÄÊý¾Ý countÊÇÊý¾Ý´óÐ¡ statuslistÊÇ·µ»ØµÄboolÖµÁÐ±í numofshareÊÇstatuslistµÄÊýÁ¿ datasizeÊÇÓ¦ËÍµÄdata´óÐ¡
+			//userÎªï¿½ï¿½ï¿½ï¿½ï¿½id metabufferÎªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ countï¿½ï¿½ï¿½ï¿½ï¿½Ý´ï¿½Ð¡ statuslistï¿½Ç·ï¿½ï¿½Øµï¿½boolÖµï¿½Ð±ï¿½ numofshareï¿½ï¿½statuslistï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ datasizeï¿½ï¿½Ó¦ï¿½Íµï¿½dataï¿½ï¿½Ð¡
 			//split = timerSplit(&timer);
 			//first_total+= split;
 
@@ -166,13 +166,13 @@ void* SocketHandler(void* lp){
 			if ((bytecount = send(*clientSock, buffer, sizeof(int), 0)) == -1){
 				fprintf(stderr, "Error sending data %d\n", errno);
 			}
-			//·¢ËÍSTAT±íÊ¾¿ÉÒÔ½øÐÐÏÂÒ»²½ÁË
+			//ï¿½ï¿½ï¿½ï¿½STATï¿½ï¿½Ê¾ï¿½ï¿½ï¿½Ô½ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½
 
 			memcpy(buffer,&numOfShare, sizeof(int));
 			if ((bytecount = send(*clientSock, buffer, sizeof(int), 0)) == -1){
 				fprintf(stderr, "Error sending data %d\n", errno);
 			}
-			//·¢ËÍshare×ÜÊý
+			//ï¿½ï¿½ï¿½ï¿½shareï¿½ï¿½ï¿½ï¿½
 
 			if ((bytecount = send(*clientSock, statusList, sizeof(bool)*numOfShare, 0)) == -1){
 				fprintf(stderr, "Error sending data %d\n", errno);
@@ -188,10 +188,13 @@ void* SocketHandler(void* lp){
 		}
 
 		/*while download request recv.ed, perform restore*/
+
+		//æœ‰å‘é€åŠŸèƒ½
+
 		if(indicator == DOWNLOAD){
 			std::string fullFileName;
 			fullFileName.assign(buffer, count);
-			//ÊÕµ½Ö¸Ê¾·û/ÎÄ¼þ´óÐ¡/ÎÄ¼þÃû ¼´init download
+			//ï¿½Õµï¿½Ö¸Ê¾ï¿½ï¿½/ï¿½Ä¼ï¿½ï¿½ï¿½Ð¡/ï¿½Ä¼ï¿½ï¿½ï¿½ ï¿½ï¿½init download
 			dedupObj_->restoreShareFile(user, fullFileName, 0, *clientSock, hashObj);
 
 		}
@@ -220,10 +223,10 @@ void Server::runReceive(){
 		printf("waiting for a connection\n");
 		clientSock_ = (int*)malloc(sizeof(int));
 		if((*clientSock_ = accept(hostSock_, (sockaddr*)&sadr_, &addrSize_))!= -1){
-			//ÔÚµÈ´ý¶ÓÁÐÖÐ´´½¨Á¬½Ó
+			//ï¿½ÚµÈ´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 			printf("Received connection from %s\n", inet_ntoa(sadr_.sin_addr));
 			pthread_create(&threadId_, 0, &SocketHandler, (void*)clientSock_);
-			//¿ªÆôÍ¨Ñ¶
+			//ï¿½ï¿½ï¿½ï¿½Í¨Ñ¶
 			pthread_detach(threadId_);
 		}
 		else{

@@ -38,6 +38,8 @@ void* Uploader::thread_handler(void* param) {
 
         /* head array point to new file header */
             obj->headerArray_[cloudIndex] = (fileMDHead_t*)(obj->uploadMetaBuffer_[cloudIndex] + obj->metaWP_[cloudIndex]);//headerarray加入了一个file_header
+                
+
 
             /* meta index update */
             obj->metaWP_[cloudIndex] += obj->fileMDHeadSize_;//更新下一次向uploadMetaBuffer添加时的指针 
@@ -49,7 +51,7 @@ void* Uploader::thread_handler(void* param) {
             obj->metaWP_[cloudIndex] += obj->headerArray_[cloudIndex]->fullNameSize;//更新wp指针（加入data为加密文件名后）
 
         }
-        else if (output.type == SHARE_OBJECT || output.type == SHARE_END) {
+        else if (output.type == CHUNK_OBJECT || output.type == CHUNK_END) {
             /* IF this is share object */
             int shareSize = output.chunkObj.chunk_header.shareSize;
 
@@ -79,7 +81,7 @@ void* Uploader::thread_handler(void* param) {
             obj->headerArray_[cloudIndex]->sizeOfComingSecrets += output.chunkObj.chunk_header.secretSize;
 
             /* IF this is the last share object, perform upload and exit thread */
-            if (output.type == SHARE_END) {
+            if (output.type == CHUNK_END) {
                 obj->performUpload(cloudIndex);
                 delete hashobj;
                 pthread_exit(NULL);
@@ -256,8 +258,8 @@ int Uploader::updateHeader(int cloudIndex) {//更新每一个metabuffer中的fil
  * @param index - the buffer index
  *
  */
-int Uploader::add(Item_t* item, int size, int index) {
-    ringBuffer_[index]->Insert(item, size);//将传递来的Item加入uploader的循环数组
+int Uploader::add(Item_t* item, int size) {
+    ringBuffer_[0]->Insert(item, size);//将传递来的Item加入uploader的循环数组
     return 1;
 }
 

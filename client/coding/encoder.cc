@@ -34,13 +34,18 @@ void* Encoder::thread_handler(void* param){//此处的param拥有一个index和o
         /* copy content into input object */
         if(type == FILE_OBJECT){
             /* if it's file header */
-            memcpy(&input.fileObj.file_header, &tempENCODEchunk.fileObj.file_header, sizeof(Uploader::fileMDHead_t));//如果是则将头文件大小的数据copy到sharechunk_item input中 union结构相同
+            memcpy(&input.fileObj.file_header, &tempENCODEchunk.fileObj.file_header, sizeof(Uploader::fileHeaderObj_t));//如果是则将头文件大小的数据copy到sharechunk_item input中 union结构相同
         }
         else
         {
+
+
             /* if it's share object */
-            obj->encodeObj_[index]->encoding(tempENCODEchunk.chunkObj.data, tempENCODEchunk.chunkObj.chunk_header.secretSize, input.chunkObj.data, &(input.chunkObj.chunk_header.shareSize));
+            //obj->encodeObj_[index]->encoding(tempENCODEchunk.chunkObj.data, tempENCODEchunk.chunkObj.chunk_header.secretSize, input.chunkObj.data, &(input.chunkObj.chunk_header.shareSize));
             //encodeObj为CDCodec模块 这是第INDEX个线程 在CDcodec.hh中默认将加密方式设为CANT-OS。
+
+            memcpy(&input.chunkObj.data,&tempENCODEchunk.fileObj.data,tempENCODEchunk.chunkObj.chunk_header.secretSize);
+
             input.chunkObj.chunk_header.secretID = tempENCODEchunk.chunkObj.chunk_header.secretID;
             input.chunkObj.chunk_header.secretSize = tempENCODEchunk.chunkObj.chunk_header.secretSize;//多了一个share文件的大小shareSize 同时data转变为了n份的
             //sharesize表示的是每个share的大小，共n个
@@ -86,56 +91,92 @@ void* Encoder::collect(void* param){//传参为此encoder的指针
             input.type =FILE_HEADER;// -9
 
             /* copy file header information */
+            input.fileObj.file_header.fullNameSize=temp.fileObj.file_header.fullNameSize;
             input.fileObj.file_header.fileSize = temp.fileObj.file_header.fileSize;
             input.fileObj.file_header.numOfPastSecrets = 0;
             input.fileObj.file_header.sizeOfPastSecrets = 0;
             input.fileObj.file_header.numOfComingSecrets = 0;
             input.fileObj.file_header.sizeOfComingSecrets = 0;
             
-            unsigned char tmp[temp.fileObj.file_header.fullNameSize*32];
-            int tmp_s;
+            //unsigned char tmp[temp.fileObj.file_header.fullNameSize*32];
+            //int tmp_s;
 
             //encode pathname into shares for privacy
-            obj->encodeObj_[0]->encoding(temp.fileObj.data, temp.fileObj.file_header.fullNameSize, tmp, &(tmp_s));//用pid=0的线程加密
+
+
+            //obj->encodeObj_[0]->encoding(temp.fileObj.data, temp.fileObj.file_header.fullNameSize, tmp, &(tmp_s));//用pid=0的线程加密
             
-            input.fileObj.file_header.fullNameSize = tmp_s;//保存加密后的文件名大小
+            //cdcodec
+
+
+            //input.fileObj.file_header.fullNameSize = tmp_s;//保存加密后的文件名大小
 
             /* copy file name 如果直接使用复制不加密 */
-            //memcpy(input.fileObj.data, temp.fileObj.file_header.data, temp.fileObj.file_header.fullNameSize);
+
+
+            memcpy(input.fileObj.data, temp.fileObj.data, temp.fileObj.file_header.fullNameSize);
+
+            //just copy
 
 #ifndef ENCODE_ONLY_MODE
             /* add the object to each cloud's uploader buffer */
-            for(int i = 0; i < obj->n_; i++){//向第n个服务器对应的上传模组上传
+           
 
                 //copy the corresponding share as file name
-                memcpy(input.fileObj.data, tmp+i*tmp_s, input.fileObj.file_header.fullNameSize);//从tmp开始 给每个i服务器相对应的第i个share 里面是加密后的名字
-                obj->uploadObj_->add(&input, sizeof(input), i);
-            }
+                //memcpy(input.fileObj.data, tmp, input.fileObj.file_header.fullNameSize);//从tmp开始 给每个i服务器相对应的第i个share 里面是加密后的名字
+
+
+
+                obj->uploadObj_->add(&input, sizeof(input));
+
+
+
+
+                
+            
 #endif
         }else{
 
             /* if it's share object */
-            for(int i = 0; i < obj->n_; i++){
-                input.type = SHARE_OBJECT;
+            
+                input.type = CHUNK_OBJECT;
 
                 /* copy share info */	
-                int shareSize = temp.chunkObj.chunk_header.shareSize;
+                int shareSize = temp.chunkObj.chunk_header.secretSize;
+
+                //权宜之计，之后可以改正。
+                //sharesize变为sf的空间。
+
                 input.chunkObj.chunk_header.secretID = temp.chunkObj.chunk_header.secretID;
                 input.chunkObj.chunk_header.secretSize = temp.chunkObj.chunk_header.secretSize;
                 input.chunkObj.chunk_header.shareSize = shareSize;
-                memcpy(input.chunkObj.data, temp.chunkObj.data+(i*shareSize), shareSize);//从share_chunk.data+(i*shareSize)中每隔sharesize取出一个share储存到chunkObj.data中
+
+                memcpy(input.chunkObj.data, temp.chunkObj.data, shareSize);//从share_chunk.data+(i*shareSize)中每隔sharesize取出一个share储存到chunkObj.data中
 #ifndef ENCODE_ONLY_MODE
 #endif
                 /* see if it's the last chunkObj.chunk_header of a file */
-                if (temp.chunkObj.chunk_header.end == 1) input.type = SHARE_END;
+                if (temp.chunkObj.chunk_header.end == 1) input.type = CHUNK_END;
 #ifdef ENCODE_ONLY_MODE
                 if (temp.chunkObj.chunk_header.end == 1) pthread_exit(NULL);
 #else 
                 /* add the share object to targeting cloud uploader buffer */
-                obj->uploadObj_->add(&input, sizeof(input), i);
+
+
+
+
+
+
+
+                
+                obj->uploadObj_->add(&input, sizeof(input));
+
+
+
+
+
 #endif
             }
-        }
+        
     }
     return NULL;
 }
@@ -174,8 +215,14 @@ Encoder::Encoder(int type, int n, int m, int r, int securetype, Uploader* upload
     for (i = 0; i < NUM_THREADS; i++){//以i为循环NUM_THEARDS个线程 从0到NUM-1
         inputbuffer_[i] = new RingBuffer<Uploader::Item_t>(RB_SIZE, true, 1);
         outputbuffer_[i] = new RingBuffer<Uploader::Item_t>(RB_SIZE, true, 1);
+
+
+
         cryptoObj_[i] = new CryptoPrimitive(securetype);//加密模块生成
         encodeObj_[i] = new CDCodec(type,n,m,r, cryptoObj_[i]);//编码模块初始化
+
+
+
         //在这里生成了函数中需要的encodeObj 是CDCodec类
         param_encoder* temp = (param_encoder*)malloc(sizeof(param_encoder));
         temp->index = i;
